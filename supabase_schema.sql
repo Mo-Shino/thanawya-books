@@ -87,6 +87,11 @@ CREATE POLICY "Public can update orders"
   ON public.orders FOR UPDATE
   USING (true);
 
+DROP POLICY IF EXISTS "Public can delete orders" ON public.orders;
+CREATE POLICY "Public can delete orders"
+  ON public.orders FOR DELETE
+  USING (true);
+
 
 -- ==============================================================================
 -- جدول 3: تفاصيل الكتب لكل طلب (order_items)
@@ -117,6 +122,11 @@ CREATE POLICY "Public can insert order items"
 DROP POLICY IF EXISTS "Public can view order items" ON public.order_items;
 CREATE POLICY "Public can view order items"
   ON public.order_items FOR SELECT
+  USING (true);
+
+DROP POLICY IF EXISTS "Public can delete order items" ON public.order_items;
+CREATE POLICY "Public can delete order items"
+  ON public.order_items FOR DELETE
   USING (true);
 
 

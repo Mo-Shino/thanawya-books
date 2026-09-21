@@ -16,6 +16,9 @@ import {
   saveBook,
   deleteBook,
   updateOrderStatus,
+  deleteOrder,
+  updateOrder,
+  calculateDeliveryFee,
   generatePrintingManifest,
   formatPrintingPressWhatsAppMessage,
 } from '@/lib/booksService';
@@ -79,6 +82,98 @@ export default function AdminPage() {
     description: '',
     pagesCount: 150,
   });
+
+  // Edit Order Modal State
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [editOrderForm, setEditOrderForm] = useState({
+    studentName: '',
+    phone: '',
+    studentClass: '',
+    stage: 'senior' as StageId,
+    status: 'pending' as OrderStatus,
+    notes: '',
+    selectedBookIds: [] as string[],
+  });
+
+  // Helper for stage classes
+  const getClassesForStage = (st: StageId): string[] => {
+    switch (st) {
+      case 'junior':
+        return ['J1', 'J2', 'J3', 'J4', 'J5', 'J6'];
+      case 'wheeler':
+        return ['W1', 'W2', 'W3', 'W4', 'W5', 'W6'];
+      case 'senior':
+        return ['S1', 'S2', 'S3', 'S4', 'S5', 'S6'];
+    }
+  };
+
+  const handleDeleteOrder = async (orderId: string) => {
+    if (window.confirm('هل أنت متأكد من حذف هذا الطلب نهائياً؟')) {
+      await deleteOrder(orderId);
+      setOrders((prev) => prev.filter((o) => o.id !== orderId));
+    }
+  };
+
+  const handleOpenEditOrder = (order: Order) => {
+    setEditingOrder(order);
+    setEditOrderForm({
+      studentName: order.studentName,
+      phone: order.phone,
+      studentClass: order.studentClass || 'S1',
+      stage: order.stage,
+      status: order.status,
+      notes: order.notes || '',
+      selectedBookIds: order.items.map((it) => it.bookId),
+    });
+  };
+
+  const handleToggleEditBookSelection = (bookId: string) => {
+    setEditOrderForm((prev) => {
+      const exists = prev.selectedBookIds.includes(bookId);
+      const newIds = exists
+        ? prev.selectedBookIds.filter((id) => id !== bookId)
+        : [...prev.selectedBookIds, bookId];
+      return { ...prev, selectedBookIds: newIds };
+    });
+  };
+
+  const handleSaveOrderEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingOrder) return;
+    if (!editOrderForm.studentName.trim() || !editOrderForm.phone.trim()) return;
+
+    const selectedBooks = books.filter((b) => editOrderForm.selectedBookIds.includes(b.id));
+    const totalBooks = selectedBooks.length;
+    const booksPrice = selectedBooks.reduce((acc, b) => acc + b.price, 0);
+    const deliveryFee = calculateDeliveryFee(totalBooks);
+    const totalPrice = booksPrice + deliveryFee;
+
+    const updatedOrder: Order = {
+      ...editingOrder,
+      studentName: editOrderForm.studentName.trim(),
+      phone: editOrderForm.phone.trim(),
+      studentClass: editOrderForm.studentClass,
+      stage: editOrderForm.stage,
+      status: editOrderForm.status,
+      notes: editOrderForm.notes.trim() || undefined,
+      totalBooks,
+      booksPrice,
+      deliveryFee,
+      totalPrice,
+      items: selectedBooks.map((b) => ({
+        bookId: b.id,
+        bookTitle: b.title,
+        subject: b.subject,
+        stage: b.stage,
+        term: b.term,
+        price: b.price,
+      })),
+    };
+
+    await updateOrder(updatedOrder);
+    setOrders((prev) => prev.map((o) => (o.id === editingOrder.id ? updatedOrder : o)));
+    setEditingOrder(null);
+  };
 
   // Verify PIN or check cached session
   useEffect(() => {
@@ -750,17 +845,38 @@ export default function AdminPage() {
                           </div>
                         </div>
 
-                        {/* Direct WhatsApp Action with Student */}
-                        <div>
+                        {/* Action Buttons: WhatsApp + Edit + Delete */}
+                        <div className="flex items-center gap-2">
                           <a
                             href={studentWhatsAppUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#1ebd5b] text-white text-xs font-bold transition-all shadow-xs"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#1ebd5b] text-white text-xs font-bold transition-all shadow-xs"
+                            title="محادثة واتساب"
                           >
                             <MessageCircle className="w-3.5 h-3.5 fill-white" />
-                            <span>محادثة واتساب</span>
+                            <span className="hidden xs:inline">واتساب</span>
                           </a>
+
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditOrder(order)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#fce8dd] hover:bg-[#eb842d] text-[#332d24] hover:text-white border border-[#eb842d]/30 text-xs font-bold transition-all cursor-pointer"
+                            title="تعديل بيانات أو كتب الطلب"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                            <span>تعديل</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteOrder(order.id)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 text-xs font-bold transition-all cursor-pointer"
+                            title="حذف الطلب نهائياً"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>حذف</span>
+                          </button>
                         </div>
                       </div>
 
@@ -1095,6 +1211,204 @@ export default function AdminPage() {
                   className="w-full py-3 px-4 rounded-xl bg-[#eb842d] hover:bg-[#d26f1c] text-white font-extrabold text-sm shadow-md transition-all cursor-pointer"
                 >
                   {editingBook ? 'حفظ التعديلات' : 'إضافة الكتاب وتفعيله فوراً'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------- */}
+      {/* MODAL: EDIT ORDER (تعديل بيانات وكتب الطلب)                   */}
+      {/* ------------------------------------------------------------- */}
+      {editingOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-[#332d24]/60 backdrop-blur-sm font-ibm animate-in fade-in duration-200">
+          <div
+            className="bg-white rounded-3xl w-full max-w-xl flex flex-col shadow-2xl border border-[#eb842d]/30 overflow-hidden max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="px-6 py-4 bg-[#fce8dd] border-b border-[#eb842d]/20 flex items-center justify-between">
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-[#332d24]">
+                  تعديل الطلب ({editingOrder.orderCode})
+                </h3>
+                <p className="text-xs text-[#332d24]/70">
+                  يمكنك تعديل بيانات الطالب أو الفصل أو الكتب المطلوبة
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingOrder(null)}
+                className="w-8 h-8 rounded-xl bg-white/80 text-[#332d24] flex items-center justify-center hover:text-red-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleSaveOrderEdit} className="p-6 space-y-4 overflow-y-auto flex-1">
+              <div>
+                <label className="block text-xs font-bold text-[#332d24] mb-1">
+                  اسم الطالب <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editOrderForm.studentName}
+                  onChange={(e) => setEditOrderForm({ ...editOrderForm, studentName: e.target.value })}
+                  className="w-full px-3 py-2 text-sm rounded-xl bg-[#fffaf6] border border-[#eb842d]/30 text-[#332d24] focus:outline-none focus:ring-2 focus:ring-[#eb842d]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-[#332d24] mb-1">
+                    رقم الواتساب <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    value={editOrderForm.phone}
+                    onChange={(e) => setEditOrderForm({ ...editOrderForm, phone: e.target.value })}
+                    className="w-full px-3 py-2 text-sm rounded-xl bg-[#fffaf6] border border-[#eb842d]/30 text-[#332d24] focus:outline-none focus:ring-2 focus:ring-[#eb842d]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#332d24] mb-1">
+                    الفصل الدراسي <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={editOrderForm.studentClass}
+                    onChange={(e) => setEditOrderForm({ ...editOrderForm, studentClass: e.target.value })}
+                    className="w-full px-3 py-2 text-sm rounded-xl bg-[#fffaf6] border border-[#eb842d]/30 text-[#332d24] focus:outline-none"
+                  >
+                    {getClassesForStage(editOrderForm.stage).map((cls) => (
+                      <option key={cls} value={cls}>
+                        فصل {cls}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-[#332d24] mb-1">
+                    المرحلة الدراسية
+                  </label>
+                  <select
+                    value={editOrderForm.stage}
+                    onChange={(e) => {
+                      const newStage = e.target.value as StageId;
+                      const available = getClassesForStage(newStage);
+                      setEditOrderForm({
+                        ...editOrderForm,
+                        stage: newStage,
+                        studentClass: available[0] || 'J1',
+                      });
+                    }}
+                    className="w-full px-3 py-2 text-sm rounded-xl bg-[#fffaf6] border border-[#eb842d]/30 text-[#332d24] focus:outline-none"
+                  >
+                    <option value="junior">جونيور (1 ثانوي)</option>
+                    <option value="wheeler">ويلر (2 ثانوي)</option>
+                    <option value="senior">سينيور (3 ثانوي)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#332d24] mb-1">
+                    حالة الطلب
+                  </label>
+                  <select
+                    value={editOrderForm.status}
+                    onChange={(e) => setEditOrderForm({ ...editOrderForm, status: e.target.value as OrderStatus })}
+                    className="w-full px-3 py-2 text-sm rounded-xl bg-[#fffaf6] border border-[#eb842d]/30 text-[#332d24] focus:outline-none"
+                  >
+                    <option value="pending">⏳ قيد الانتظار</option>
+                    <option value="printing">🖨️ قيد الطباعة</option>
+                    <option value="ready">📦 جاهز للاستلام</option>
+                    <option value="delivered">✅ تم التسليم</option>
+                    <option value="cancelled">❌ ملغي</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Books Selection for Order */}
+              <div className="pt-2">
+                <label className="block text-xs font-bold text-[#332d24] mb-2">
+                  الكتب والمذكرات المطلوبة لهذا الطالب:
+                </label>
+                <div className="max-h-48 overflow-y-auto space-y-1.5 p-3 rounded-2xl bg-[#fffaf6] border border-[#eb842d]/20">
+                  {books
+                    .filter((b) => b.stage === editOrderForm.stage)
+                    .map((b) => {
+                      const isChecked = editOrderForm.selectedBookIds.includes(b.id);
+                      return (
+                        <label
+                          key={b.id}
+                          className={`flex items-center justify-between p-2 rounded-xl border text-xs cursor-pointer transition-colors ${
+                            isChecked
+                              ? 'bg-white border-[#eb842d] text-[#332d24] font-bold shadow-2xs'
+                              : 'bg-white/60 border-transparent text-[#332d24]/70 hover:bg-white'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => handleToggleEditBookSelection(b.id)}
+                              className="accent-[#eb842d] w-4 h-4 rounded"
+                            />
+                            <span>{b.title}</span>
+                          </div>
+                          <span className="text-[#eb842d]">{b.price} ج.م</span>
+                        </label>
+                      );
+                    })}
+                </div>
+              </div>
+
+              {/* Live Price Calculation Summary */}
+              {(() => {
+                const selectedBooks = books.filter((b) => editOrderForm.selectedBookIds.includes(b.id));
+                const count = selectedBooks.length;
+                const subtotal = selectedBooks.reduce((acc, b) => acc + b.price, 0);
+                const deliveryFee = calculateDeliveryFee(count);
+                const grandTotal = subtotal + deliveryFee;
+
+                return (
+                  <div className="p-3 rounded-xl bg-[#fce8dd]/60 border border-[#eb842d]/25 text-xs space-y-1">
+                    <div className="flex justify-between text-[#332d24]/75">
+                      <span>الكتب المحددة ({count} كتب):</span>
+                      <span>{subtotal} ج.م</span>
+                    </div>
+                    <div className="flex justify-between text-[#332d24]/75">
+                      <span>مصاريف التوصيل:</span>
+                      <span className="font-bold text-[#eb842d]">{deliveryFee === 0 ? 'مجاناً' : `${deliveryFee} ج.م`}</span>
+                    </div>
+                    <div className="flex justify-between text-sm font-black text-[#332d24] pt-1 border-t border-[#eb842d]/20">
+                      <span>الإجمالي الجديد:</span>
+                      <span className="text-[#eb842d]">{grandTotal} جنيه مصري</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div className="pt-2 flex items-center gap-3">
+                <button
+                  type="submit"
+                  className="flex-1 py-3 px-4 rounded-xl bg-[#eb842d] hover:bg-[#d26f1c] text-white font-extrabold text-sm shadow-md transition-all cursor-pointer"
+                >
+                  حفظ التعديلات على الطلب
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingOrder(null)}
+                  className="py-3 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 text-[#332d24] font-bold text-sm transition-all"
+                >
+                  إلغاء
                 </button>
               </div>
             </form>

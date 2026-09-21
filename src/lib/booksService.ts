@@ -312,6 +312,91 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus): P
   return true;
 }
 
+// دالة حذف طلب بالكامل (الأدمن)
+export async function deleteOrder(orderId: string): Promise<boolean> {
+  try {
+    if (supabase) {
+      await supabase.from('order_items').delete().eq('order_id', orderId);
+      const { error } = await supabase.from('orders').delete().eq('id', orderId);
+      if (error) {
+        console.warn('Supabase deleteOrder warning:', error.message);
+      }
+    }
+  } catch (err) {
+    console.warn('Supabase deleteOrder error:', err);
+  }
+
+  if (typeof window !== 'undefined') {
+    const raw = localStorage.getItem(LOCAL_STORAGE_ORDERS_KEY);
+    if (raw) {
+      const list: Order[] = JSON.parse(raw);
+      const filtered = list.filter((o) => o.id !== orderId);
+      localStorage.setItem(LOCAL_STORAGE_ORDERS_KEY, JSON.stringify(filtered));
+    }
+  }
+
+  return true;
+}
+
+// دالة تعديل بيانات الطلب بالكامل والكتب الخاصة به (الأدمن)
+export async function updateOrder(order: Order): Promise<boolean> {
+  try {
+    if (supabase) {
+      const { error: orderErr } = await supabase
+        .from('orders')
+        .update({
+          student_name: order.studentName,
+          phone: order.phone,
+          student_class: order.studentClass,
+          parent_phone: order.studentClass,
+          stage: order.stage,
+          notes: order.notes || '',
+          total_books: order.totalBooks,
+          books_price: order.booksPrice,
+          delivery_fee: order.deliveryFee,
+          total_price: order.totalPrice,
+          status: order.status,
+        })
+        .eq('id', order.id);
+
+      if (orderErr) {
+        console.warn('Supabase updateOrder error:', orderErr.message);
+      }
+
+      // Re-sync order_items
+      await supabase.from('order_items').delete().eq('order_id', order.id);
+      if (order.items && order.items.length > 0) {
+        const payload = order.items.map((it) => ({
+          order_id: order.id,
+          book_id: it.bookId,
+          book_title: it.bookTitle,
+          subject: it.subject,
+          stage: it.stage,
+          term: it.term,
+          price: it.price,
+        }));
+        await supabase.from('order_items').insert(payload);
+      }
+    }
+  } catch (err) {
+    console.warn('Supabase updateOrder error:', err);
+  }
+
+  if (typeof window !== 'undefined') {
+    const raw = localStorage.getItem(LOCAL_STORAGE_ORDERS_KEY);
+    if (raw) {
+      const list: Order[] = JSON.parse(raw);
+      const idx = list.findIndex((o) => o.id === order.id);
+      if (idx >= 0) {
+        list[idx] = order;
+        localStorage.setItem(LOCAL_STORAGE_ORDERS_KEY, JSON.stringify(list));
+      }
+    }
+  }
+
+  return true;
+}
+
 // دالة توليد تقرير المطبعة المجمع (Printing Press Manifest)
 export function generatePrintingManifest(orders: Order[]): PrintingManifestItem[] {
   // تجميع الطلبات غير الملغية فقط
