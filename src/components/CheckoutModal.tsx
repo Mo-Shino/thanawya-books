@@ -91,6 +91,20 @@ export function CheckoutModal({
     }
   };
 
+  const groupedBooks = React.useMemo(() => {
+    const map = new Map<string, { book: Book; count: number; sumPrice: number }>();
+    for (const b of selectedBooks) {
+      const existing = map.get(b.id);
+      if (existing) {
+        existing.count += 1;
+        existing.sumPrice += b.price;
+      } else {
+        map.set(b.id, { book: b, count: 1, sumPrice: b.price });
+      }
+    }
+    return Array.from(map.values());
+  }, [selectedBooks]);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-[#332d24]/60 backdrop-blur-sm font-ibm animate-in fade-in duration-200">
       <div 
@@ -191,20 +205,25 @@ export function CheckoutModal({
           {/* Books Order Summary Card */}
           <div className="bg-[#fff9f4] rounded-2xl p-4 border border-[#eb842d]/25">
             <div className="text-xs font-bold text-[#332d24] mb-2 flex items-center justify-between">
-              <span>الكتب المختارة ({count} كتب):</span>
+              <span>الكتب المختارة ({count} {count === 1 ? 'كتاب' : 'كتب'}):</span>
               <span className="text-[#eb842d] font-bold">فصل {studentClass}</span>
             </div>
             
             <div className="max-h-32 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin">
-              {selectedBooks.map((b) => (
+              {groupedBooks.map(({ book, count: bookCount, sumPrice }) => (
                 <div
-                  key={b.id}
+                  key={book.id}
                   className="flex items-center justify-between text-xs py-1 border-b border-[#eb842d]/10 last:border-0"
                 >
-                  <span className="text-[#332d24] truncate max-w-[75%] font-medium">
-                    • {b.title}
+                  <span className="text-[#332d24] truncate max-w-[75%] font-medium flex items-center gap-1.5">
+                    <span>• {book.title}</span>
+                    {bookCount > 1 && (
+                      <span className="px-1.5 py-0.5 rounded-md bg-[#eb842d] text-white font-bold text-[10px]">
+                        × {bookCount}
+                      </span>
+                    )}
                   </span>
-                  <span className="font-bold text-[#332d24]">{b.price} ج.م</span>
+                  <span className="font-bold text-[#332d24]">{sumPrice} ج.م</span>
                 </div>
               ))}
             </div>

@@ -18,7 +18,7 @@ export default function HomePage() {
   const [selectedStage, setSelectedStage] = useState<StageId | null>(null);
   const [selectedTerm, setSelectedTerm] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedBookIds, setSelectedBookIds] = useState<string[]>([]);
+  const [bookQuantities, setBookQuantities] = useState<Record<string, number>>({});
   
   // Modals state
   const [previewBook, setPreviewBook] = useState<Book | null>(null);
@@ -56,32 +56,77 @@ export default function HomePage() {
     });
   }, [books, selectedStage, selectedTerm, searchQuery]);
 
-  // Selected books array
+  // Selected books array with duplicates to reflect quantity
   const selectedBooksList = useMemo(() => {
-    return books.filter((b) => selectedBookIds.includes(b.id));
-  }, [books, selectedBookIds]);
+    const list: Book[] = [];
+    for (const book of books) {
+      const qty = bookQuantities[book.id] || 0;
+      for (let i = 0; i < qty; i++) {
+        list.push(book);
+      }
+    }
+    return list;
+  }, [books, bookQuantities]);
+
+  // Increase book quantity
+  const handleIncrease = (book: Book) => {
+    setBookQuantities((prev) => ({
+      ...prev,
+      [book.id]: (prev[book.id] || 0) + 1,
+    }));
+  };
+
+  // Decrease book quantity
+  const handleDecrease = (book: Book) => {
+    setBookQuantities((prev) => {
+      const current = prev[book.id] || 0;
+      if (current <= 1) {
+        const next = { ...prev };
+        delete next[book.id];
+        return next;
+      }
+      return {
+        ...prev,
+        [book.id]: current - 1,
+      };
+    });
+  };
 
   // Toggle single book selection
   const handleToggleSelect = (book: Book) => {
-    setSelectedBookIds((prev) =>
-      prev.includes(book.id) ? prev.filter((id) => id !== book.id) : [...prev, book.id]
-    );
+    if ((bookQuantities[book.id] || 0) > 0) {
+      handleDecrease(book);
+    } else {
+      handleIncrease(book);
+    }
   };
 
   // Select all visible
   const handleSelectAllVisible = () => {
-    const visibleIds = visibleBooks.map((b) => b.id);
-    setSelectedBookIds((prev) => Array.from(new Set([...prev, ...visibleIds])));
+    setBookQuantities((prev) => {
+      const next = { ...prev };
+      for (const b of visibleBooks) {
+        if (!next[b.id] || next[b.id] === 0) {
+          next[b.id] = 1;
+        }
+      }
+      return next;
+    });
   };
 
   // Deselect all visible
   const handleDeselectAllVisible = () => {
-    const visibleIds = new Set(visibleBooks.map((b) => b.id));
-    setSelectedBookIds((prev) => prev.filter((id) => !visibleIds.has(id)));
+    setBookQuantities((prev) => {
+      const next = { ...prev };
+      for (const b of visibleBooks) {
+        delete next[b.id];
+      }
+      return next;
+    });
   };
 
   const allVisibleSelected =
-    visibleBooks.length > 0 && visibleBooks.every((b) => selectedBookIds.includes(b.id));
+    visibleBooks.length > 0 && visibleBooks.every((b) => (bookQuantities[b.id] || 0) > 0);
 
   const currentStageInfo = STAGES_LIST.find((s) => s.id === selectedStage);
 
@@ -279,12 +324,15 @@ export default function HomePage() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {visibleBooks.map((book) => {
-                  const isSelected = selectedBookIds.includes(book.id);
+                  const qty = bookQuantities[book.id] || 0;
                   return (
                     <BookCard
                       key={book.id}
                       book={book}
-                      isSelected={isSelected}
+                      quantity={qty}
+                      isSelected={qty > 0}
+                      onIncrease={handleIncrease}
+                      onDecrease={handleDecrease}
                       onToggleSelect={handleToggleSelect}
                       onPreviewPdf={(b) => setPreviewBook(b)}
                     />
@@ -311,7 +359,7 @@ export default function HomePage() {
         book={previewBook}
         isOpen={!!previewBook}
         onClose={() => setPreviewBook(null)}
-        isSelected={previewBook ? selectedBookIds.includes(previewBook.id) : false}
+        isSelected={previewBook ? (bookQuantities[previewBook.id] || 0) > 0 : false}
         onToggleSelect={handleToggleSelect}
       />
 
@@ -324,7 +372,7 @@ export default function HomePage() {
           stage={selectedStage}
           onSuccess={(createdOrder) => {
             setIsCheckoutOpen(false);
-            setSelectedBookIds([]);
+            setBookQuantities({});
             setCompletedOrder(createdOrder);
           }}
         />

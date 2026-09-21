@@ -177,27 +177,30 @@ export async function createOrder(params: {
 
   try {
     if (supabase) {
+      const dbPayload = {
+        order_code: newOrder.orderCode,
+        student_name: newOrder.studentName,
+        phone: newOrder.phone,
+        student_class: newOrder.studentClass,
+        stage: newOrder.stage,
+        notes: newOrder.notes || '',
+        total_books: newOrder.totalBooks,
+        books_price: newOrder.booksPrice,
+        delivery_fee: newOrder.deliveryFee,
+        total_price: newOrder.totalPrice,
+        status: newOrder.status,
+        created_at: newOrder.createdAt,
+      };
+
       const { data: orderData, error: orderErr } = await supabase
         .from('orders')
-        .insert({
-          id: newOrder.id,
-          order_code: newOrder.orderCode,
-          student_name: newOrder.studentName,
-          student_class: newOrder.studentClass,
-          parent_phone: newOrder.studentClass,
-          stage: newOrder.stage,
-          notes: newOrder.notes || '',
-          total_books: newOrder.totalBooks,
-          books_price: newOrder.booksPrice,
-          delivery_fee: newOrder.deliveryFee,
-          total_price: newOrder.totalPrice,
-          status: newOrder.status,
-          created_at: newOrder.createdAt,
-        })
+        .insert(dbPayload)
         .select()
         .single();
 
       if (!orderErr && orderData) {
+        newOrder.id = orderData.id;
+
         const orderItemsPayload = items.map((it) => ({
           order_id: orderData.id,
           book_id: it.bookId,
@@ -208,13 +211,16 @@ export async function createOrder(params: {
           price: it.price,
         }));
 
-        await supabase.from('order_items').insert(orderItemsPayload);
+        const { error: itemsErr } = await supabase.from('order_items').insert(orderItemsPayload);
+        if (itemsErr) {
+          console.error('Supabase insert order_items error:', itemsErr);
+        }
       } else {
-        console.warn('Supabase insert order note:', orderErr);
+        console.error('Supabase insert order error:', orderErr);
       }
     }
   } catch (err) {
-    console.warn('Supabase createOrder error, saving locally:', err);
+    console.error('Supabase createOrder error, saving locally:', err);
   }
 
   // Backup to localStorage
@@ -240,13 +246,13 @@ export async function getOrders(): Promise<Order[]> {
         `)
         .order('created_at', { ascending: false });
 
-      if (!error && ordersData && ordersData.length > 0) {
+      if (!error && ordersData) {
         return ordersData.map((o: any) => ({
           id: o.id,
           orderCode: o.order_code,
           studentName: o.student_name,
-          phone: o.phone,
-          studentClass: o.parent_phone || o.student_class || '',
+          phone: o.phone || '',
+          studentClass: o.student_class || o.parent_phone || '',
           stage: o.stage as StageId,
           notes: o.notes,
           totalBooks: o.total_books,
@@ -348,7 +354,6 @@ export async function updateOrder(order: Order): Promise<boolean> {
           student_name: order.studentName,
           phone: order.phone,
           student_class: order.studentClass,
-          parent_phone: order.studentClass,
           stage: order.stage,
           notes: order.notes || '',
           total_books: order.totalBooks,

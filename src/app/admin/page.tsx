@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   Book,
   Order,
+  OrderItem,
   StageId,
   SemesterTerm,
   OrderStatus,
@@ -881,20 +882,47 @@ export default function AdminPage() {
                       </div>
 
                       {/* Items Ordered */}
-                      <div className="bg-[#fffaf6] rounded-xl p-3 border border-[#eb842d]/15">
-                        <div className="text-xs font-bold text-[#332d24]/70 mb-2">
-                          الكتب المطلوبة ({order.totalBooks} كتب):
+                      <div className="bg-[#fffaf6] rounded-xl p-3.5 border border-[#eb842d]/20">
+                        <div className="text-xs font-black text-[#332d24] mb-2 flex items-center justify-between">
+                          <span>الكتب المقررة للطلب ({order.totalBooks} {order.totalBooks === 1 ? 'كتاب' : 'كتب'}):</span>
+                          <span className="text-[11px] font-bold text-[#eb842d]">
+                            {order.items.length === 0 ? 'لا توجد كتب مسجلة' : `${order.items.length} عنصر`}
+                          </span>
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                          {order.items.map((it, idx) => (
-                            <span
-                              key={idx}
-                              className="px-2.5 py-1 rounded-lg bg-white border border-[#eb842d]/25 text-xs text-[#332d24] font-medium"
-                            >
-                              📖 {it.bookTitle} ({it.price} ج)
-                            </span>
-                          ))}
-                        </div>
+                        {order.items && order.items.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {Object.values(
+                              order.items.reduce((acc, it) => {
+                                const key = it.bookId || it.bookTitle;
+                                if (!acc[key]) {
+                                  acc[key] = { ...it, count: 1, sumPrice: it.price };
+                                } else {
+                                  acc[key].count += 1;
+                                  acc[key].sumPrice += it.price;
+                                }
+                                return acc;
+                              }, {} as Record<string, OrderItem & { count: number; sumPrice: number }>)
+                            ).map((grouped, idx) => (
+                              <span
+                                key={idx}
+                                className="px-3 py-1.5 rounded-xl bg-white border border-[#eb842d]/30 text-xs text-[#332d24] font-bold flex items-center gap-1.5 shadow-2xs"
+                              >
+                                <span className="text-[#eb842d]">📖</span>
+                                <span>{grouped.bookTitle}</span>
+                                {grouped.count > 1 && (
+                                  <span className="px-1.5 py-0.2 rounded-md bg-[#eb842d] text-white font-black text-[11px]">
+                                    × {grouped.count}
+                                  </span>
+                                )}
+                                <span className="text-[#eb842d] text-[11px]">({grouped.sumPrice} ج)</span>
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-xl border border-amber-200 font-medium">
+                            ⚠️ هذا الطلب لا يحتوي على كتب مسجلة (طلب تجريبي أو قديم) - يمكنك الضغط على <strong>تعديل</strong> أعلاه لإضافة كتبه.
+                          </div>
+                        )}
                       </div>
 
                       {/* Price Breakdown */}
