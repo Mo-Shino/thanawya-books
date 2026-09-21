@@ -22,6 +22,7 @@ import {
   calculateDeliveryFee,
   generatePrintingManifest,
   formatPrintingPressWhatsAppMessage,
+  uploadBookPdf,
 } from '@/lib/booksService';
 import { BooksHeader } from '@/components/BooksHeader';
 import {
@@ -47,6 +48,11 @@ import {
   Layers,
   X,
   FileText,
+  UploadCloud,
+  FileUp,
+  FileCheck,
+  AlertCircle,
+  Loader2,
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -83,6 +89,11 @@ export default function AdminPage() {
     description: '',
     pagesCount: 150,
   });
+
+  // PDF Upload States
+  const [selectedPdfFile, setSelectedPdfFile] = useState<File | null>(null);
+  const [isUploadingPdf, setIsUploadingPdf] = useState(false);
+  const [uploadError, setUploadError] = useState<string>('');
 
   // Edit Order Modal State
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
@@ -286,6 +297,29 @@ export default function AdminPage() {
   const handleSaveBook = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!bookForm.title.trim() || !bookForm.subject.trim()) return;
+    setUploadError('');
+
+    let finalPdfUrl = editingBook?.pdfUrl || '';
+
+    // If admin chose a new PDF file, upload it to Supabase Storage
+    if (selectedPdfFile) {
+      try {
+        setIsUploadingPdf(true);
+        finalPdfUrl = await uploadBookPdf(selectedPdfFile);
+      } catch (err: any) {
+        setIsUploadingPdf(false);
+        setUploadError(err.message || 'حدث خطأ أثناء رفع ملف الـ PDF');
+        return;
+      } finally {
+        setIsUploadingPdf(false);
+      }
+    }
+
+    // Require PDF if creating a new book
+    if (!finalPdfUrl) {
+      setUploadError('يرجى اختيار ملف PDF للكتاب من جهازك.');
+      return;
+    }
 
     const bookId = editingBook ? editingBook.id : `book_${Date.now()}`;
     const newBook: Book = {
@@ -295,8 +329,8 @@ export default function AdminPage() {
       stage: bookForm.stage,
       term: bookForm.term,
       price: Number(bookForm.price),
-      pdfUrl: bookForm.pdfUrl.trim() || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-      samplePdfUrl: bookForm.pdfUrl.trim() || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+      pdfUrl: finalPdfUrl,
+      samplePdfUrl: finalPdfUrl,
       description: bookForm.description.trim(),
       pagesCount: Number(bookForm.pagesCount) || 100,
       isActive: true,
@@ -305,6 +339,8 @@ export default function AdminPage() {
     await saveBook(newBook);
     setIsBookModalOpen(false);
     setEditingBook(null);
+    setSelectedPdfFile(null);
+    setUploadError('');
     setBookForm({
       title: '',
       subject: '',
@@ -1005,6 +1041,8 @@ export default function AdminPage() {
                 type="button"
                 onClick={() => {
                   setEditingBook(null);
+                  setSelectedPdfFile(null);
+                  setUploadError('');
                   setBookForm({
                     title: '',
                     subject: '',
@@ -1085,6 +1123,8 @@ export default function AdminPage() {
                           type="button"
                           onClick={() => {
                             setEditingBook(book);
+                            setSelectedPdfFile(null);
+                            setUploadError('');
                             setBookForm({
                               title: book.title,
                               subject: book.subject,
@@ -1225,17 +1265,117 @@ export default function AdminPage() {
                 </div>
               </div>
 
+              {/* PDF File Upload Zone */}
               <div>
-                <label className="block text-xs font-bold text-[#332d24] mb-1">
-                  رابط ملف الـ PDF للمعاينة (URL أو رابط Google Drive)
+                <label className="block text-xs font-bold text-[#332d24] mb-1.5 flex items-center justify-between">
+                  <span>ملف الـ PDF للمعاينة <span className="text-red-500">*</span></span>
+                  <span className="text-[11px] text-[#eb842d] font-semibold">صيغة PDF فقط</span>
                 </label>
-                <input
-                  type="url"
-                  value={bookForm.pdfUrl}
-                  onChange={(e) => setBookForm({ ...bookForm, pdfUrl: e.target.value })}
-                  placeholder="https://... رابط الـ PDF المباشر"
-                  className="w-full px-3 py-2 text-sm rounded-xl bg-[#fffaf6] border border-[#eb842d]/30 text-[#332d24] focus:outline-none"
-                />
+
+                {uploadError && (
+                  <div className="mb-2.5 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{uploadError}</span>
+                  </div>
+                )}
+
+                {/* State 1: File chosen by admin */}
+                {selectedPdfFile ? (
+                  <div className="bg-[#fff9f4] rounded-2xl p-4 border-2 border-[#eb842d]/40 flex items-center justify-between gap-3 shadow-xs">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#eb842d] text-white flex items-center justify-center shrink-0 shadow-sm">
+                        <FileText className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-black text-[#332d24] truncate">
+                          {selectedPdfFile.name}
+                        </div>
+                        <div className="text-[11px] text-[#332d24]/60 flex items-center gap-2">
+                          <span>{(selectedPdfFile.size / (1024 * 1024)).toFixed(2)} ميجابايت</span>
+                          <span>•</span>
+                          <span className="text-emerald-600 font-bold">جاهز للرفع والتثبيت ✓</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPdfFile(null)}
+                      className="px-3 py-1.5 rounded-xl bg-white border border-red-200 text-red-600 hover:bg-red-50 text-xs font-bold transition-all shrink-0 cursor-pointer"
+                    >
+                      تغيير الملف
+                    </button>
+                  </div>
+                ) : editingBook && editingBook.pdfUrl ? (
+                  /* State 2: Editing existing book that has an existing PDF */
+                  <div className="bg-[#fffaf6] rounded-2xl p-4 border border-[#eb842d]/30 space-y-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2 text-emerald-700 font-bold">
+                        <FileCheck className="w-4 h-4 text-emerald-600" />
+                        <span>يوجد ملف PDF محفوظ حالياً لهذا الكتاب</span>
+                      </div>
+                      <a
+                        href={editingBook.pdfUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[#eb842d] hover:underline font-bold"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>معاينة الملف الحالي</span>
+                      </a>
+                    </div>
+
+                    <label className="block w-full text-center py-2.5 px-4 rounded-xl bg-white hover:bg-[#fce8dd]/60 border border-[#eb842d]/40 text-[#eb842d] font-bold text-xs cursor-pointer transition-all shadow-2xs">
+                      <input
+                        type="file"
+                        accept=".pdf,application/pdf"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+                              setUploadError('يرجى اختيار ملف بصيغة PDF فقط.');
+                              return;
+                            }
+                            setUploadError('');
+                            setSelectedPdfFile(file);
+                          }
+                        }}
+                      />
+                      <span>📁 استبدال بملف PDF جديد من جهازك</span>
+                    </label>
+                  </div>
+                ) : (
+                  /* State 3: Upload dropzone */
+                  <label className="block w-full rounded-2xl border-2 border-dashed border-[#eb842d]/40 hover:border-[#eb842d] bg-[#fffdfb] hover:bg-[#fff7f0] p-6 text-center cursor-pointer transition-all shadow-2xs group">
+                    <input
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      required={!editingBook?.pdfUrl}
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+                            setUploadError('يرجى اختيار ملف بصيغة PDF فقط.');
+                            return;
+                          }
+                          setUploadError('');
+                          setSelectedPdfFile(file);
+                        }
+                      }}
+                    />
+                    <div className="w-12 h-12 rounded-2xl bg-[#fce8dd] text-[#eb842d] group-hover:bg-[#eb842d] group-hover:text-white flex items-center justify-center mx-auto mb-3 transition-colors shadow-xs">
+                      <UploadCloud className="w-6 h-6" />
+                    </div>
+                    <div className="text-sm font-black text-[#332d24] group-hover:text-[#eb842d] transition-colors mb-1">
+                      اضغط هنا لرفع ملف الـ PDF من جهازك
+                    </div>
+                    <div className="text-xs text-[#332d24]/60">
+                      صيغة PDF فقط • حتى 50 ميجابايت
+                    </div>
+                  </label>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -1272,9 +1412,17 @@ export default function AdminPage() {
               <div className="pt-3">
                 <button
                   type="submit"
-                  className="w-full py-3 px-4 rounded-xl bg-[#eb842d] hover:bg-[#d26f1c] text-white font-extrabold text-sm shadow-md transition-all cursor-pointer"
+                  disabled={isUploadingPdf}
+                  className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#eb842d] to-[#d26f1c] hover:from-[#d26f1c] hover:to-[#b95d13] text-white font-extrabold text-sm sm:text-base shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
                 >
-                  {editingBook ? 'حفظ التعديلات' : 'إضافة الكتاب وتفعيله فوراً'}
+                  {isUploadingPdf ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>جاري رفع ملف الـ PDF وتثبيت الكتاب...</span>
+                    </>
+                  ) : (
+                    <span>{editingBook ? 'حفظ التعديلات على الكتاب' : 'إضافة الكتاب وتفعيله فوراً'}</span>
+                  )}
                 </button>
               </div>
             </form>

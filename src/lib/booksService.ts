@@ -485,3 +485,36 @@ export function formatPrintingPressWhatsAppMessage(manifest: PrintingManifestIte
 
   return message;
 }
+
+// دالة رفع ملف الـ PDF إلى مساحة تخزين Supabase Storage
+export async function uploadBookPdf(file: File): Promise<string> {
+  const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+  const fileName = `${Date.now()}_${cleanName}`;
+  const filePath = `books/${fileName}`;
+
+  if (!supabase) {
+    throw new Error('قاعدة بيانات Supabase غير متصلة.');
+  }
+
+  const { data, error } = await supabase.storage
+    .from('books_pdfs')
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: true,
+      contentType: 'application/pdf',
+    });
+
+  if (error) {
+    console.error('Supabase upload error:', error);
+    if (error.message?.includes('Bucket not found') || (error as any).code === 'NoSuchBucket') {
+      throw new Error('مساحة التخزين books_pdfs لم يتم إنشاؤها بعد في Supabase. يرجى تشغيل كود SQL لإنشاء الـ Bucket.');
+    }
+    throw new Error(`فشل رفع ملف الـ PDF: ${error.message}`);
+  }
+
+  const { data: urlData } = supabase.storage
+    .from('books_pdfs')
+    .getPublicUrl(filePath);
+
+  return urlData.publicUrl;
+}

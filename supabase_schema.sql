@@ -179,3 +179,27 @@ VALUES
   ('sen-eng-t1', 'كتاب الإنجليزي - ترم أول', 'إنجليزي', 'senior', 'term_1', 115, 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', true),
   ('sen-eng-t2', 'كتاب الإنجليزي - ترم ثاني', 'إنجليزي', 'senior', 'term_2', 115, 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', true)
 ON CONFLICT (id) DO NOTHING;
+
+-- ==============================================================================
+-- 4. إعداد مساحة تخزين ملفات الـ PDF (Supabase Storage)
+-- ==============================================================================
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('books_pdfs', 'books_pdfs', true)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+DROP POLICY IF EXISTS "Public can view books_pdfs" ON storage.objects;
+CREATE POLICY "Public can view books_pdfs" ON storage.objects
+  FOR SELECT USING (bucket_id = 'books_pdfs');
+
+DROP POLICY IF EXISTS "Public can upload books_pdfs" ON storage.objects;
+CREATE POLICY "Public can upload books_pdfs" ON storage.objects
+  FOR INSERT WITH CHECK (bucket_id = 'books_pdfs');
+
+DROP POLICY IF EXISTS "Public can update books_pdfs" ON storage.objects;
+CREATE POLICY "Public can update books_pdfs" ON storage.objects
+  FOR UPDATE USING (bucket_id = 'books_pdfs');
+
+DROP POLICY IF EXISTS "Public can delete books_pdfs" ON storage.objects;
+CREATE POLICY "Public can delete books_pdfs" ON storage.objects
+  FOR DELETE USING (bucket_id = 'books_pdfs');
+
