@@ -43,6 +43,29 @@ export function CheckoutModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
+  // Group books by ID (HOOK MUST BE AT TOP OF COMPONENT BEFORE ANY RETURN)
+  const groupedBooks = React.useMemo(() => {
+    const map = new Map<string, { book: Book; count: number; sumPrice: number }>();
+    for (const b of selectedBooks) {
+      const existing = map.get(b.id);
+      if (existing) {
+        existing.count += 1;
+        existing.sumPrice += b.price;
+      } else {
+        map.set(b.id, { book: b, count: 1, sumPrice: b.price });
+      }
+    }
+    return Array.from(map.values());
+  }, [selectedBooks]);
+
+  // Sync class when stage changes
+  React.useEffect(() => {
+    const classes = getClassesForStage(stage);
+    if (!classes.includes(studentClass)) {
+      setStudentClass(classes[0] || 'J1');
+    }
+  }, [stage, studentClass]);
+
   if (!isOpen) return null;
 
   const count = selectedBooks.length;
@@ -90,20 +113,6 @@ export function CheckoutModal({
       setErrorMessage('حدث خطأ أثناء حفظ الطلب، يرجى المحاولة مرة أخرى.');
     }
   };
-
-  const groupedBooks = React.useMemo(() => {
-    const map = new Map<string, { book: Book; count: number; sumPrice: number }>();
-    for (const b of selectedBooks) {
-      const existing = map.get(b.id);
-      if (existing) {
-        existing.count += 1;
-        existing.sumPrice += b.price;
-      } else {
-        map.set(b.id, { book: b, count: 1, sumPrice: b.price });
-      }
-    }
-    return Array.from(map.values());
-  }, [selectedBooks]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-[#332d24]/60 backdrop-blur-sm font-ibm animate-in fade-in duration-200">
