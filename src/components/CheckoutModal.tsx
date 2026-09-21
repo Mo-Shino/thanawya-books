@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Book, Order, StageId, STAGES_LIST } from '@/types/books';
 import { calculateDeliveryFee, createOrder } from '@/lib/booksService';
-import { X, User, Phone, School, Loader2, Sparkles } from 'lucide-react';
+import { X, User, Phone, School, Loader2, Sparkles, ChevronDown, Check, AlertCircle } from 'lucide-react';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -22,6 +22,7 @@ export function CheckoutModal({
 }: CheckoutModalProps) {
   const [studentName, setStudentName] = useState('');
   const [phone, setPhone] = useState('');
+  const [isClassDropdownOpen, setIsClassDropdownOpen] = useState(false);
   
   // Available classes based on selected stage:
   // Junior: J1 .. J6
@@ -144,8 +145,20 @@ export function CheckoutModal({
         {/* Modal Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[85vh] overflow-y-auto">
           {errorMessage && (
-            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold">
-              ⚠️ {errorMessage}
+            <div className="p-3.5 rounded-2xl bg-red-50/90 border border-red-200 text-red-700 text-xs font-bold flex items-center justify-between gap-3 shadow-xs animate-in slide-in-from-top-2 duration-200">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0 shadow-2xs">
+                  <AlertCircle className="w-4 h-4" />
+                </div>
+                <span className="leading-snug">{errorMessage}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setErrorMessage('')}
+                className="w-7 h-7 rounded-xl text-red-400 hover:text-red-700 hover:bg-red-100 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
           )}
 
@@ -188,25 +201,90 @@ export function CheckoutModal({
               </div>
             </div>
 
-            {/* Class selection */}
+            {/* Custom Class selection */}
             <div>
               <label className="block text-xs font-bold text-[#332d24] mb-1.5">
                 الفصل الدراسي <span className="text-red-500">*</span>
               </label>
+              
               <div className="relative">
-                <School className="w-4 h-4 text-[#eb842d] absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <select
-                  required
-                  value={studentClass}
-                  onChange={(e) => setStudentClass(e.target.value)}
-                  className="w-full pr-10 pl-3 py-2.5 rounded-xl bg-[#fffaf6] border border-[#eb842d]/30 text-sm font-bold text-[#332d24] focus:outline-none focus:ring-2 focus:ring-[#eb842d] cursor-pointer"
+                {/* Custom Trigger Button */}
+                <button
+                  type="button"
+                  onClick={() => setIsClassDropdownOpen((prev) => !prev)}
+                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[#fffaf6] border border-[#eb842d]/35 text-sm font-bold text-[#332d24] hover:border-[#eb842d] focus:ring-2 focus:ring-[#eb842d] transition-all cursor-pointer shadow-2xs"
                 >
-                  {availableClasses.map((cls) => (
-                    <option key={cls} value={cls}>
-                      فصل {cls}
-                    </option>
-                  ))}
-                </select>
+                  <div className="flex items-center gap-2">
+                    <School className="w-4 h-4 text-[#eb842d]" />
+                    <span>فصل {studentClass}</span>
+                  </div>
+                  <ChevronDown
+                    className={`w-4 h-4 text-[#eb842d] transition-transform duration-200 ${
+                      isClassDropdownOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+
+                {/* Custom Dropdown Menu */}
+                {isClassDropdownOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-30"
+                      onClick={() => setIsClassDropdownOpen(false)}
+                    />
+                    <div className="absolute right-0 left-0 top-full mt-1.5 z-40 bg-white rounded-2xl border-2 border-[#eb842d]/30 shadow-2xl p-1.5 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                      {availableClasses.map((cls) => {
+                        const isSelected = studentClass === cls;
+                        return (
+                          <button
+                            key={cls}
+                            type="button"
+                            onClick={() => {
+                              setStudentClass(cls);
+                              setIsClassDropdownOpen(false);
+                            }}
+                            className={`w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#eb842d] text-white shadow-xs'
+                                : 'text-[#332d24] hover:bg-[#fce8dd]/60 hover:text-[#eb842d]'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`w-2 h-2 rounded-full ${
+                                  isSelected ? 'bg-white' : 'bg-[#eb842d]/40'
+                                }`}
+                              />
+                              <span>فصل {cls}</span>
+                            </div>
+                            {isSelected && <Check className="w-4 h-4 stroke-[3]" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Quick Class Chips */}
+              <div className="flex items-center gap-1 pt-2 flex-wrap">
+                {availableClasses.map((cls) => (
+                  <button
+                    key={cls}
+                    type="button"
+                    onClick={() => {
+                      setStudentClass(cls);
+                      setIsClassDropdownOpen(false);
+                    }}
+                    className={`px-2 py-0.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      studentClass === cls
+                        ? 'bg-[#eb842d] text-white shadow-2xs font-black'
+                        : 'bg-[#fffaf6] border border-[#eb842d]/25 text-[#332d24]/75 hover:bg-[#fce8dd]'
+                    }`}
+                  >
+                    {cls}
+                  </button>
+                ))}
               </div>
             </div>
           </div>

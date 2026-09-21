@@ -96,6 +96,21 @@ export default function AdminPage() {
     selectedBookIds: [] as string[],
   });
 
+  // Custom Confirmation Dialog State (replaces ugly window.confirm)
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'تأكيد الحذف',
+    onConfirm: () => {},
+  });
+
   // Helper for stage classes
   const getClassesForStage = (st: StageId): string[] => {
     switch (st) {
@@ -108,11 +123,17 @@ export default function AdminPage() {
     }
   };
 
-  const handleDeleteOrder = async (orderId: string) => {
-    if (window.confirm('هل أنت متأكد من حذف هذا الطلب نهائياً؟')) {
-      await deleteOrder(orderId);
-      setOrders((prev) => prev.filter((o) => o.id !== orderId));
-    }
+  const handleDeleteOrder = (orderId: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'حذف الطلب نهائياً',
+      message: 'هل أنت متأكد من حذف هذا الطلب بالكامل؟ لن يمكن استرجاع بياناته بعد الحذف.',
+      confirmText: 'نعم، احذف الطلب',
+      onConfirm: async () => {
+        await deleteOrder(orderId);
+        setOrders((prev) => prev.filter((o) => o.id !== orderId));
+      },
+    });
   };
 
   const handleOpenEditOrder = (order: Order) => {
@@ -298,11 +319,17 @@ export default function AdminPage() {
   };
 
   // Handle Delete Book
-  const handleDeleteBook = async (bookId: string) => {
-    if (confirm('هل أنت متأكد من حذف هذا الكتاب من القائمة؟')) {
-      await deleteBook(bookId);
-      loadData();
-    }
+  const handleDeleteBook = (bookId: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'حذف الكتاب من القائمة',
+      message: 'هل أنت متأكد من حذف هذا الكتاب من قائمة الكتب المعروضة للطلاب؟ لن يتم حذفه من الطلبات السابقة.',
+      confirmText: 'نعم، احذف الكتاب',
+      onConfirm: async () => {
+        await deleteBook(bookId);
+        loadData();
+      },
+    });
   };
 
   // Filtered Orders
@@ -725,29 +752,35 @@ export default function AdminPage() {
 
               {/* Filters */}
               <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                <select
-                  value={orderStageFilter}
-                  onChange={(e) => setOrderStageFilter(e.target.value)}
-                  className="py-2 px-3 rounded-xl bg-[#fffaf6] border border-[#eb842d]/30 text-xs font-bold text-[#332d24] focus:outline-none"
-                >
-                  <option value="all">كافة المراحل</option>
-                  <option value="senior">سينيور</option>
-                  <option value="wheeler">ويلر</option>
-                  <option value="junior">جونيور</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={orderStageFilter}
+                    onChange={(e) => setOrderStageFilter(e.target.value)}
+                    className="appearance-none pr-8 pl-3 py-2 rounded-xl bg-[#fffaf6] border border-[#eb842d]/30 text-xs font-bold text-[#332d24] focus:outline-none focus:ring-2 focus:ring-[#eb842d] cursor-pointer"
+                  >
+                    <option value="all">كافة المراحل</option>
+                    <option value="senior">سينيور</option>
+                    <option value="wheeler">ويلر</option>
+                    <option value="junior">جونيور</option>
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-[#eb842d] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
 
-                <select
-                  value={orderStatusFilter}
-                  onChange={(e) => setOrderStatusFilter(e.target.value)}
-                  className="py-2 px-3 rounded-xl bg-[#fffaf6] border border-[#eb842d]/30 text-xs font-bold text-[#332d24] focus:outline-none"
-                >
-                  <option value="all">كافة الحالات</option>
-                  <option value="pending">قيد الانتظار</option>
-                  <option value="printing">قيد الطباعة</option>
-                  <option value="ready">جاهز للاستلام</option>
-                  <option value="delivered">تم التسليم</option>
-                  <option value="cancelled">ملغي</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={orderStatusFilter}
+                    onChange={(e) => setOrderStatusFilter(e.target.value)}
+                    className="appearance-none pr-8 pl-3 py-2 rounded-xl bg-[#fffaf6] border border-[#eb842d]/30 text-xs font-bold text-[#332d24] focus:outline-none focus:ring-2 focus:ring-[#eb842d] cursor-pointer"
+                  >
+                    <option value="all">كافة الحالات</option>
+                    <option value="pending">⏳ قيد الانتظار</option>
+                    <option value="printing">🖨️ قيد الطباعة</option>
+                    <option value="ready">📦 جاهز للاستلام</option>
+                    <option value="delivered">✅ تم التسليم</option>
+                    <option value="cancelled">❌ ملغي</option>
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-[#eb842d] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
               </div>
 
             </div>
@@ -794,29 +827,32 @@ export default function AdminPage() {
                           </span>
 
                           {/* Status Dropdown */}
-                          <select
-                            value={order.status}
-                            onChange={(e) =>
-                              handleStatusChange(order.id, e.target.value as OrderStatus)
-                            }
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
-                              order.status === 'delivered'
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                                : order.status === 'printing'
-                                ? 'bg-amber-50 text-amber-700 border-amber-300'
-                                : order.status === 'ready'
-                                ? 'bg-blue-50 text-blue-700 border-blue-300'
-                                : order.status === 'cancelled'
-                                ? 'bg-red-50 text-red-700 border-red-300'
-                                : 'bg-[#fffaf6] text-[#eb842d] border-[#eb842d]/40'
-                            }`}
-                          >
-                            <option value="pending">⏳ قيد الانتظار</option>
-                            <option value="printing">🖨️ قيد الطباعة</option>
-                            <option value="ready">📦 جاهز للاستلام</option>
-                            <option value="delivered">✅ تم التسليم</option>
-                            <option value="cancelled">❌ ملغي</option>
-                          </select>
+                          <div className="relative">
+                            <select
+                              value={order.status}
+                              onChange={(e) =>
+                                handleStatusChange(order.id, e.target.value as OrderStatus)
+                              }
+                              className={`appearance-none pr-7 pl-3 py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+                                order.status === 'delivered'
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                                  : order.status === 'printing'
+                                  ? 'bg-amber-50 text-amber-700 border-amber-300'
+                                  : order.status === 'ready'
+                                  ? 'bg-blue-50 text-blue-700 border-blue-300'
+                                  : order.status === 'cancelled'
+                                  ? 'bg-red-50 text-red-700 border-red-300'
+                                  : 'bg-[#fffaf6] text-[#eb842d] border-[#eb842d]/40'
+                              }`}
+                            >
+                              <option value="pending">⏳ قيد الانتظار</option>
+                              <option value="printing">🖨️ قيد الطباعة</option>
+                              <option value="ready">📦 جاهز للاستلام</option>
+                              <option value="delivered">✅ تم التسليم</option>
+                              <option value="cancelled">❌ ملغي</option>
+                            </select>
+                            <ChevronDown className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-60" />
+                          </div>
                         </div>
                       </div>
 
@@ -1440,6 +1476,50 @@ export default function AdminPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------- */}
+      {/* CUSTOM CONFIRMATION MODAL (بدل alert/confirm المتصفح القديم)     */}
+      {/* ------------------------------------------------------------- */}
+      {confirmDialog.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#332d24]/60 backdrop-blur-sm font-ibm animate-in fade-in duration-200">
+          <div 
+            className="bg-white rounded-3xl w-full max-w-sm p-6 flex flex-col items-center text-center shadow-2xl border-2 border-red-100 animate-in zoom-in-95 duration-200 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-14 h-14 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mb-4 border border-red-200 shadow-xs">
+              <Trash2 className="w-7 h-7" />
+            </div>
+
+            <h3 className="text-xl font-black text-[#332d24] mb-2">
+              {confirmDialog.title}
+            </h3>
+
+            <p className="text-xs sm:text-sm text-[#332d24]/75 mb-6 leading-relaxed">
+              {confirmDialog.message}
+            </p>
+
+            <div className="grid grid-cols-2 gap-3 w-full">
+              <button
+                type="button"
+                onClick={() => setConfirmDialog((prev) => ({ ...prev, isOpen: false }))}
+                className="py-3 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 text-[#332d24] font-bold text-xs sm:text-sm transition-all cursor-pointer"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  confirmDialog.onConfirm();
+                  setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+                }}
+                className="py-3 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition-all cursor-pointer"
+              >
+                {confirmDialog.confirmText || 'تأكيد الحذف'}
+              </button>
+            </div>
           </div>
         </div>
       )}
