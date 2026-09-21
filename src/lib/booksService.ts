@@ -1,6 +1,5 @@
 import { Book, Order, OrderItem, StageId, PrintingManifestItem, OrderStatus } from '@/types/books';
-import { INITIAL_BOOKS } from './booksData';
-import { supabase } from './supabaseClient';
+import { supabase, isSupabaseConfigured } from './supabaseClient';
 
 const LOCAL_STORAGE_BOOKS_KEY = 'thanawya_books_catalog_v1';
 const LOCAL_STORAGE_ORDERS_KEY = 'thanawya_books_orders_v1';
@@ -16,18 +15,18 @@ export function calculateDeliveryFee(count: number): number {
   return 15;
 }
 
-// دالة جلب قائمة الكتب
+// دالة جلب قائمة الكتب (المصدر الحقيقي هو Supabase)
 export async function getBooks(): Promise<Book[]> {
   try {
-    if (supabase) {
+    if (supabase && isSupabaseConfigured) {
       const { data, error } = await supabase
         .from('books')
         .select('*')
         .eq('is_active', true)
         .order('created_at', { ascending: true });
 
-      if (!error && data && data.length > 0) {
-        return data.map((b: any) => ({
+      if (!error && data) {
+        const booksList: Book[] = data.map((b: any) => ({
           id: b.id,
           title: b.title,
           subject: b.subject,
@@ -42,13 +41,24 @@ export async function getBooks(): Promise<Book[]> {
           isActive: b.is_active,
           createdAt: b.created_at,
         }));
+
+        // مزامنة الكاش المحلي مع قاعدة البيانات الحقيقية
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(LOCAL_STORAGE_BOOKS_KEY, JSON.stringify(booksList));
+        }
+
+        return booksList;
+      }
+
+      if (error) {
+        console.error('Supabase getBooks error:', error);
       }
     }
   } catch (err) {
-    console.warn('Supabase fetch books error, falling back to local store:', err);
+    console.warn('Supabase fetch books error, falling back to local cache:', err);
   }
 
-  // Fallback to localStorage or INITIAL_BOOKS
+  // في حال تعطل الاتصال بالإنترنت فقط، يتم القراءة من الكاش المحلي
   if (typeof window !== 'undefined') {
     const cached = localStorage.getItem(LOCAL_STORAGE_BOOKS_KEY);
     if (cached) {
@@ -58,17 +68,15 @@ export async function getBooks(): Promise<Book[]> {
         console.error('Error parsing cached books', e);
       }
     }
-    // Initialize localStorage with INITIAL_BOOKS
-    localStorage.setItem(LOCAL_STORAGE_BOOKS_KEY, JSON.stringify(INITIAL_BOOKS));
   }
 
-  return INITIAL_BOOKS;
+  return [];
 }
 
 // دالة حفظ أو تحديث كتاب (للأدمن)
 export async function saveBook(book: Book): Promise<Book> {
   try {
-    if (supabase) {
+    if (supabase && isSupabaseConfigured) {
       const dbPayload = {
         id: book.id,
         title: book.title,
@@ -85,25 +93,32 @@ export async function saveBook(book: Book): Promise<Book> {
 
       const { error } = await supabase.from('books').upsert(dbPayload);
       if (error) {
-        console.warn('Supabase upsert book warning:', error);
+        console.error('Supabase upsert book error:', error);
+        throw new Error(`فشل حفظ الكتاب: ${error.message}`);
       }
     }
   } catch (err) {
-    console.warn('Supabase saveBook error:', err);
+    console.error('saveBook error:', err);
+    throw err;
   }
 
   // Save to localStorage
   if (typeof window !== 'undefined') {
-    const currentBooks = await getBooks();
-    const index = currentBooks.findIndex((b) => b.id === book.id);
-    let updated: Book[];
-    if (index >= 0) {
-      updated = [...currentBooks];
-      updated[index] = book;
-    } else {
-      updated = [book, ...currentBooks];
+    try {
+      const raw = localStorage.getItem(LOCAL_STORAGE_BOOKS_KEY);
+      const currentBooks: Book[] = raw ? JSON.parse(raw) : [];
+      const index = currentBooks.findIndex((b) => b.id === book.id);
+      let updated: Book[];
+      if (index >= 0) {
+        updated = [...currentBooks];
+        updated[index] = book;
+      } else {
+        updated = [book, ...currentBooks];
+      }
+      localStorage.setItem(LOCAL_STORAGE_BOOKS_KEY, JSON.stringify(updated));
+    } catch (e) {
+      console.error(e);
     }
-    localStorage.setItem(LOCAL_STORAGE_BOOKS_KEY, JSON.stringify(updated));
   }
 
   return book;
@@ -112,17 +127,29 @@ export async function saveBook(book: Book): Promise<Book> {
 // دالة حذف كتاب
 export async function deleteBook(bookId: string): Promise<boolean> {
   try {
-    if (supabase) {
-      await supabase.from('books').delete().eq('id', bookId);
+    if (supabase && isSupabaseConfigured) {
+      const { error } = await supabase.from('books').delete().eq('id', bookId);
+      if (error) {
+        console.error('Supabase deleteBook error:', error);
+        throw new Error(`فشل حذف الكتاب: ${error.message}`);
+      }
     }
   } catch (err) {
-    console.warn('Supabase deleteBook error:', err);
+    console.error('deleteBook error:', err);
+    throw err;
   }
 
   if (typeof window !== 'undefined') {
-    const currentBooks = await getBooks();
-    const filtered = currentBooks.filter((b) => b.id !== bookId);
-    localStorage.setItem(LOCAL_STORAGE_BOOKS_KEY, JSON.stringify(filtered));
+    try {
+      const raw = localStorage.getItem(LOCAL_STORAGE_BOOKS_KEY);
+      if (raw) {
+        const currentBooks: Book[] = JSON.parse(raw);
+        const filtered = currentBooks.filter((b) => b.id !== bookId);
+        localStorage.setItem(LOCAL_STORAGE_BOOKS_KEY, JSON.stringify(filtered));
+      }
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   return true;
@@ -237,7 +264,7 @@ export async function createOrder(params: {
 // دالة جلب كافة الطلبات (للأدمن)
 export async function getOrders(): Promise<Order[]> {
   try {
-    if (supabase) {
+    if (supabase && isSupabaseConfigured) {
       const { data: ordersData, error } = await supabase
         .from('orders')
         .select(`
@@ -247,7 +274,7 @@ export async function getOrders(): Promise<Order[]> {
         .order('created_at', { ascending: false });
 
       if (!error && ordersData) {
-        return ordersData.map((o: any) => ({
+        const mappedOrders: Order[] = ordersData.map((o: any) => ({
           id: o.id,
           orderCode: o.order_code,
           studentName: o.student_name,
@@ -272,13 +299,24 @@ export async function getOrders(): Promise<Order[]> {
             price: Number(it.price),
           })),
         }));
+
+        // مزامنة الكاش المحلي مع قاعدة البيانات
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(LOCAL_STORAGE_ORDERS_KEY, JSON.stringify(mappedOrders));
+        }
+
+        return mappedOrders;
+      }
+
+      if (error) {
+        console.error('Supabase getOrders error:', error);
       }
     }
   } catch (err) {
     console.warn('Supabase getOrders error:', err);
   }
 
-  // Fallback to localStorage
+  // Fallback to localStorage only if network failed or offline
   if (typeof window !== 'undefined') {
     const raw = localStorage.getItem(LOCAL_STORAGE_ORDERS_KEY);
     if (raw) {
