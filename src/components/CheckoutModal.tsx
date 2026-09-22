@@ -116,19 +116,19 @@ export function CheckoutModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-[#332d24]/60 backdrop-blur-sm font-ibm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-6 bg-[#332d24]/60 backdrop-blur-sm font-ibm animate-in fade-in duration-200">
       <div 
-        className="bg-white rounded-3xl w-full max-w-lg flex flex-col shadow-2xl border border-[#eb842d]/30 overflow-hidden relative"
+        className="bg-white rounded-2xl sm:rounded-3xl w-[calc(100vw-20px)] sm:w-full max-w-lg max-h-[92vh] flex flex-col shadow-2xl border border-[#eb842d]/30 overflow-hidden relative"
         onClick={(e) => e.stopPropagation()}
       >
         
         {/* Modal Header */}
-        <div className="px-6 py-4 bg-[#fce8dd] border-b border-[#eb842d]/20 flex items-center justify-between">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 bg-[#fce8dd] border-b border-[#eb842d]/20 flex items-center justify-between shrink-0">
           <div>
-            <h3 className="text-lg font-bold text-[#332d24]">
+            <h3 className="text-base sm:text-lg font-bold text-[#332d24]">
               تأكيد حجز كتب {currentStageInfo?.nameAr}
             </h3>
-            <p className="text-xs text-[#332d24]/70">
+            <p className="text-[11px] sm:text-xs text-[#332d24]/70">
               أدخل بياناتك لتسليم الكتب لك في المدرسة
             </p>
           </div>
@@ -136,14 +136,14 @@ export function CheckoutModal({
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-xl bg-white/80 hover:bg-white text-[#332d24] flex items-center justify-center border border-[#eb842d]/30 hover:text-red-600 transition-colors"
+            className="w-8 h-8 rounded-xl bg-white/80 hover:bg-white text-[#332d24] flex items-center justify-center border border-[#eb842d]/30 hover:text-red-600 transition-colors shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Modal Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[85vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
           {errorMessage && (
             <div className="p-3.5 rounded-2xl bg-red-50/90 border border-red-200 text-red-700 text-xs font-bold flex items-center justify-between gap-3 shadow-xs animate-in slide-in-from-top-2 duration-200">
               <div className="flex items-center gap-2.5">
@@ -339,7 +339,7 @@ export function CheckoutModal({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#eb842d] to-[#d26f1c] hover:from-[#d26f1c] hover:to-[#b95d13] text-white font-extrabold text-base shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+              className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#eb842d] to-[#d26f1c] hover:from-[#d26f1c] hover:to-[#b95d13] text-white font-extrabold text-sm sm:text-base shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 whitespace-nowrap"
             >
               {isSubmitting ? (
                 <>

@@ -218,24 +218,24 @@ export default function HomePage() {
           <div className="space-y-6 animate-in fade-in duration-200">
             
             {/* Top Stage Bar with Back button */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#eb842d]/20">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-4 border-b border-[#eb842d]/20">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <button
                   type="button"
                   onClick={() => setSelectedStage(null)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#eb842d]/30 text-xs font-bold text-[#332d24] hover:bg-[#fce8dd] transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#eb842d]/30 text-xs font-bold text-[#332d24] hover:bg-[#fce8dd] transition-all cursor-pointer whitespace-nowrap"
                 >
                   <ArrowRight className="w-4 h-4 text-[#eb842d]" />
                   <span>تغيير المرحلة</span>
                 </button>
 
-                <h1 className="text-2xl font-black text-[#332d24]">
-                  كتب {currentStageInfo?.nameAr} <span className="text-sm font-bold text-[#eb842d]">({currentStageInfo?.gradeAr})</span>
+                <h1 className="text-xl sm:text-2xl font-black text-[#332d24]">
+                  كتب {currentStageInfo?.nameAr} <span className="text-xs sm:text-sm font-bold text-[#eb842d]">({currentStageInfo?.gradeAr})</span>
                 </h1>
               </div>
 
               {/* Quick stage switch tabs */}
-              <div className="flex items-center gap-1 bg-[#fce8dd]/60 p-1 rounded-xl border border-[#eb842d]/20">
+              <div className="flex items-center gap-1 bg-[#fce8dd]/60 p-1 rounded-xl border border-[#eb842d]/20 overflow-x-auto no-scrollbar shrink-0">
                 {(['junior', 'wheeler', 'senior'] as StageId[]).map((st) => {
                   const info = STAGES_LIST.find((s) => s.id === st);
                   const isCurrent = selectedStage === st;
@@ -247,7 +247,7 @@ export default function HomePage() {
                         setSelectedStage(st);
                         setSelectedTerm('all');
                       }}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                         isCurrent
                           ? 'bg-[#eb842d] text-white shadow-xs'
                           : 'text-[#332d24]/70 hover:text-[#332d24]'
@@ -261,10 +261,10 @@ export default function HomePage() {
             </div>
 
             {/* Filter by Term & Select All Bar */}
-            <div className="bg-white rounded-2xl p-3 sm:p-4 border border-[#eb842d]/20 shadow-xs flex flex-wrap items-center justify-between gap-3">
+            <div className="bg-white rounded-2xl p-3 sm:p-4 border border-[#eb842d]/20 shadow-xs flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
               
               {/* Term buttons */}
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                 {[
                   { id: 'all', label: 'الكل' },
                   { id: 'term_1', label: 'ترم أول' },
@@ -274,7 +274,7 @@ export default function HomePage() {
                     key={t.id}
                     type="button"
                     onClick={() => setSelectedTerm(t.id)}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    className={`px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                       selectedTerm === t.id
                         ? 'bg-[#eb842d] text-white'
                         : 'bg-[#fffaf6] text-[#332d24] hover:bg-[#fce8dd]'
@@ -290,7 +290,7 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={allVisibleSelected ? handleDeselectAllVisible : handleSelectAllVisible}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer whitespace-nowrap ${
                     allVisibleSelected
                       ? 'bg-[#332d24] text-white border-[#332d24]'
                       : 'bg-white text-[#eb842d] border-[#eb842d]/40 hover:bg-[#eb842d]/10'

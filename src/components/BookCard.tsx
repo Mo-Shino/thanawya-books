@@ -88,7 +88,7 @@ export function BookCard({
         <button
           type="button"
           onClick={() => onPreviewPdf(book)}
-          className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold bg-[#fce8dd]/60 hover:bg-[#fce8dd] text-[#332d24] border border-[#eb842d]/30 transition-all cursor-pointer h-10"
+          className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold bg-[#fce8dd]/60 hover:bg-[#fce8dd] text-[#332d24] border border-[#eb842d]/30 transition-all cursor-pointer h-10 whitespace-nowrap"
         >
           <FileText className="w-3.5 h-3.5 text-[#eb842d]" />
           <span>معاينة PDF</span>
@@ -98,7 +98,7 @@ export function BookCard({
           <button
             type="button"
             onClick={handlePlus}
-            className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer bg-white hover:bg-[#eb842d]/10 text-[#332d24] border border-[#eb842d]/40 h-10"
+            className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer bg-white hover:bg-[#eb842d]/10 text-[#332d24] border border-[#eb842d]/40 h-10 whitespace-nowrap"
           >
             <Plus className="w-3.5 h-3.5 text-[#eb842d]" />
             <span>إضافة</span>

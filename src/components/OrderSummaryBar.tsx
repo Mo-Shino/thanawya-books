@@ -48,17 +48,18 @@ export function OrderSummaryBar({ selectedBooks, onOpenCheckout }: OrderSummaryB
         </div>
 
         {/* Grand Total & Checkout Button */}
-        <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4">
-          <div className="text-right">
-            <div className="text-[11px] text-[#332d24]/60 font-semibold">
-              الإجمالي النهائي (شامل التوصيل):
+        <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3 sm:gap-4">
+          <div className="text-right shrink-0">
+            <div className="text-[10px] sm:text-[11px] text-[#332d24]/60 font-semibold">
+              <span className="hidden sm:inline">الإجمالي النهائي (شامل التوصيل):</span>
+              <span className="sm:hidden">المجموع شامل التوصيل:</span>
             </div>
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl sm:text-3xl font-black text-[#332d24]">
+              <span className="text-xl sm:text-3xl font-black text-[#332d24]">
                 {total}
               </span>
-              <span className="text-xs font-bold text-[#eb842d]">
-                جنيه مصري
+              <span className="text-[11px] sm:text-xs font-bold text-[#eb842d]">
+                ج.م
               </span>
             </div>
           </div>
@@ -66,10 +67,10 @@ export function OrderSummaryBar({ selectedBooks, onOpenCheckout }: OrderSummaryB
           <button
             type="button"
             onClick={onOpenCheckout}
-            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 rounded-2xl bg-gradient-to-r from-[#eb842d] to-[#d26f1c] hover:from-[#d26f1c] hover:to-[#b95d13] text-white font-extrabold text-sm sm:text-base shadow-[0_8px_20px_rgba(235,132,45,0.35)] hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-8 py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-[#eb842d] to-[#d26f1c] hover:from-[#d26f1c] hover:to-[#b95d13] text-white font-extrabold text-xs sm:text-base shadow-[0_8px_20px_rgba(235,132,45,0.35)] hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
           >
             <span>إتمام وتأكيد الحجز</span>
-            <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
           </button>
         </div>
 

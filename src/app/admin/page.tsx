@@ -515,45 +515,45 @@ export default function AdminPage() {
         </div>
 
         {/* 4 Stat Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white rounded-2xl p-5 border border-[#eb842d]/25 shadow-sm">
-            <div className="text-xs font-bold text-[#332d24]/60 mb-1">إجمالي النسخ للمطبعة</div>
-            <div className="text-3xl font-black text-[#eb842d]">{totalCopiesToPrint}</div>
-            <div className="text-[11px] text-[#332d24]/60 mt-1">نسخة مطلوب طباعتها حالياً</div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+          <div className="bg-white rounded-2xl p-3.5 sm:p-5 border border-[#eb842d]/25 shadow-sm">
+            <div className="text-[11px] sm:text-xs font-bold text-[#332d24]/60 mb-1">إجمالي النسخ للمطبعة</div>
+            <div className="text-2xl sm:text-3xl font-black text-[#eb842d]">{totalCopiesToPrint}</div>
+            <div className="text-[10px] sm:text-[11px] text-[#332d24]/60 mt-1">نسخة مطلوب طباعتها</div>
           </div>
 
-          <div className="bg-white rounded-2xl p-5 border border-[#eb842d]/25 shadow-sm">
-            <div className="text-xs font-bold text-[#332d24]/60 mb-1">إجمالي طلبات الطلاب</div>
-            <div className="text-3xl font-black text-[#332d24]">{orders.length}</div>
-            <div className="text-[11px] text-[#332d24]/60 mt-1">طلب مسجل على النظام</div>
+          <div className="bg-white rounded-2xl p-3.5 sm:p-5 border border-[#eb842d]/25 shadow-sm">
+            <div className="text-[11px] sm:text-xs font-bold text-[#332d24]/60 mb-1">إجمالي طلبات الطلاب</div>
+            <div className="text-2xl sm:text-3xl font-black text-[#332d24]">{orders.length}</div>
+            <div className="text-[10px] sm:text-[11px] text-[#332d24]/60 mt-1">طلب مسجل على النظام</div>
           </div>
 
-          <div className="bg-white rounded-2xl p-5 border border-[#eb842d]/25 shadow-sm">
-            <div className="text-xs font-bold text-[#332d24]/60 mb-1">إجمالي المبيعات المحصلة</div>
-            <div className="text-3xl font-black text-emerald-700">{totalRevenue} <span className="text-xs font-bold">ج.م</span></div>
-            <div className="text-[11px] text-[#332d24]/60 mt-1">شاملة مصاريف التوصيل</div>
+          <div className="bg-white rounded-2xl p-3.5 sm:p-5 border border-[#eb842d]/25 shadow-sm">
+            <div className="text-[11px] sm:text-xs font-bold text-[#332d24]/60 mb-1">المبيعات المحصلة</div>
+            <div className="text-2xl sm:text-3xl font-black text-emerald-700">{totalRevenue} <span className="text-xs font-bold">ج.م</span></div>
+            <div className="text-[10px] sm:text-[11px] text-[#332d24]/60 mt-1">شاملة التوصيل</div>
           </div>
 
-          <div className="bg-white rounded-2xl p-5 border border-[#eb842d]/25 shadow-sm">
-            <div className="text-xs font-bold text-[#332d24]/60 mb-1">الكتب والمذكرات المتاحة</div>
-            <div className="text-3xl font-black text-[#332d24]">{books.length}</div>
-            <div className="text-[11px] text-[#332d24]/60 mt-1">مذكرات مفعلة لجميع المراحل</div>
+          <div className="bg-white rounded-2xl p-3.5 sm:p-5 border border-[#eb842d]/25 shadow-sm">
+            <div className="text-[11px] sm:text-xs font-bold text-[#332d24]/60 mb-1">الكتب المتاحة</div>
+            <div className="text-2xl sm:text-3xl font-black text-[#332d24]">{books.length}</div>
+            <div className="text-[10px] sm:text-[11px] text-[#332d24]/60 mt-1">مذكرات مفعلة</div>
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex items-center gap-2 border-b-2 border-[#eb842d]/20 pb-1">
+        {/* Tab Navigation (Horizontal Touch Scroll on Mobile) */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b-2 border-[#eb842d]/20 no-scrollbar w-full flex-nowrap">
           <button
             type="button"
             onClick={() => setActiveTab('manifest')}
-            className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm sm:text-base transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 sm:px-5 py-2.5 sm:py-3 rounded-2xl font-bold text-xs sm:text-base transition-all cursor-pointer whitespace-nowrap shrink-0 ${
               activeTab === 'manifest'
-                ? 'bg-[#eb842d] text-white shadow-md shadow-[#eb842d]/25 scale-[1.02]'
+                ? 'bg-[#eb842d] text-white shadow-md shadow-[#eb842d]/25'
                 : 'bg-white/80 hover:bg-white text-[#332d24] border border-[#eb842d]/20'
             }`}
           >
-            <Printer className="w-5 h-5" />
-            <span>تقرير المطبعة المجمع (أمر الطباعة)</span>
+            <Printer className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span>تقرير المطبعة المجمع</span>
             <span className="px-2 py-0.5 rounded-full text-xs bg-white/20 text-white font-extrabold">
               {totalCopiesToPrint}
             </span>
@@ -562,13 +562,13 @@ export default function AdminPage() {
           <button
             type="button"
             onClick={() => setActiveTab('orders')}
-            className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm sm:text-base transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 sm:px-5 py-2.5 sm:py-3 rounded-2xl font-bold text-xs sm:text-base transition-all cursor-pointer whitespace-nowrap shrink-0 ${
               activeTab === 'orders'
-                ? 'bg-[#eb842d] text-white shadow-md shadow-[#eb842d]/25 scale-[1.02]'
+                ? 'bg-[#eb842d] text-white shadow-md shadow-[#eb842d]/25'
                 : 'bg-white/80 hover:bg-white text-[#332d24] border border-[#eb842d]/20'
             }`}
           >
-            <Package className="w-5 h-5" />
+            <Package className="w-4 h-4 sm:w-5 sm:h-5" />
             <span>طلبات الطلاب</span>
             <span className="px-2 py-0.5 rounded-full text-xs bg-white/20 text-white font-extrabold">
               {orders.length}
@@ -578,13 +578,13 @@ export default function AdminPage() {
           <button
             type="button"
             onClick={() => setActiveTab('books')}
-            className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm sm:text-base transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 sm:px-5 py-2.5 sm:py-3 rounded-2xl font-bold text-xs sm:text-base transition-all cursor-pointer whitespace-nowrap shrink-0 ${
               activeTab === 'books'
-                ? 'bg-[#eb842d] text-white shadow-md shadow-[#eb842d]/25 scale-[1.02]'
+                ? 'bg-[#eb842d] text-white shadow-md shadow-[#eb842d]/25'
                 : 'bg-white/80 hover:bg-white text-[#332d24] border border-[#eb842d]/20'
             }`}
           >
-            <BookPlus className="w-5 h-5" />
+            <BookPlus className="w-4 h-4 sm:w-5 sm:h-5" />
             <span>إدارة الكتب والـ PDF</span>
             <span className="px-2 py-0.5 rounded-full text-xs bg-white/20 text-white font-extrabold">
               {books.length}
@@ -599,22 +599,22 @@ export default function AdminPage() {
           <div className="space-y-6">
             
             {/* Control Bar: Filters & Print/Copy Buttons */}
-            <div className="bg-white rounded-2xl p-5 border border-[#eb842d]/25 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#eb842d]/25 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
               
               {/* Stage Filter */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
-                <span className="text-xs font-bold text-[#332d24]/60 ml-2">تصفية المرحلة:</span>
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
+                <span className="text-xs font-bold text-[#332d24]/60 ml-1 shrink-0">المرحلة:</span>
                 {[
                   { id: 'all', label: 'كافة المراحل' },
-                  { id: 'senior', label: 'سينيور (3 ثانوي)' },
-                  { id: 'wheeler', label: 'ويلر (2 ثانوي)' },
-                  { id: 'junior', label: 'جونيور (1 ثانوي)' },
+                  { id: 'senior', label: 'سينيور (3 ث)' },
+                  { id: 'wheeler', label: 'ويلر (2 ث)' },
+                  { id: 'junior', label: 'جونيور (1 ث)' },
                 ].map((s) => (
                   <button
                     key={s.id}
                     type="button"
                     onClick={() => setManifestStageFilter(s.id)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                       manifestStageFilter === s.id
                         ? 'bg-[#eb842d] text-white shadow-xs'
                         : 'bg-[#fce8dd]/60 text-[#332d24] hover:bg-[#fce8dd]'
@@ -626,22 +626,22 @@ export default function AdminPage() {
               </div>
 
               {/* Action Buttons: Copy WhatsApp & Print */}
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
                 <button
                   type="button"
                   onClick={handleCopyManifest}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#1ebd5b] text-white text-xs sm:text-sm font-extrabold shadow-sm transition-all cursor-pointer"
+                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#1ebd5b] text-white text-xs sm:text-sm font-extrabold shadow-sm transition-all cursor-pointer whitespace-nowrap"
                   title="نسخ صيغة الواتساب لإرسالها لمسؤول المطبعة"
                 >
                   {copiedManifest ? (
                     <>
                       <Check className="w-4 h-4 stroke-[2.5]" />
-                      <span>تم نسخ الرسالة! جاهزة للواتساب</span>
+                      <span>تم نسخ الرسالة للواتساب!</span>
                     </>
                   ) : (
                     <>
                       <Copy className="w-4 h-4" />
-                      <span>نسخ تقرير المطبعة للواتساب</span>
+                      <span>نسخ تقرير المطبعة</span>
                     </>
                   )}
                 </button>
@@ -649,7 +649,7 @@ export default function AdminPage() {
                 <button
                   type="button"
                   onClick={handlePrint}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-[#eb842d]/30 text-[#332d24] hover:bg-[#fce8dd]/40 text-xs sm:text-sm font-extrabold transition-all cursor-pointer"
+                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl bg-white border border-[#eb842d]/30 text-[#332d24] hover:bg-[#fce8dd]/40 text-xs sm:text-sm font-extrabold transition-all cursor-pointer whitespace-nowrap"
                 >
                   <Printer className="w-4 h-4 text-[#eb842d]" />
                   <span>طباعة A4</span>
@@ -854,12 +854,12 @@ export default function AdminPage() {
                       className="bg-white rounded-2xl p-5 sm:p-6 border border-[#eb842d]/25 shadow-sm hover:shadow-md transition-all space-y-4"
                     >
                       {/* Top Bar: Code, Date, Stage, Status */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#eb842d]/15">
-                        <div className="flex items-center gap-3">
-                          <span className="px-3 py-1 rounded-xl bg-[#eb842d]/15 text-[#eb842d] font-black text-sm tracking-wider">
+                      <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 pb-3 border-b border-[#eb842d]/15">
+                        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                          <span className="px-3 py-1 rounded-xl bg-[#eb842d]/15 text-[#eb842d] font-black text-xs sm:text-sm tracking-wider whitespace-nowrap">
                             {order.orderCode}
                           </span>
-                          <span className="text-xs font-semibold text-[#332d24]/60">
+                          <span className="text-[11px] sm:text-xs font-semibold text-[#332d24]/60 whitespace-nowrap">
                             {new Date(order.createdAt).toLocaleString('ar-EG', {
                               dateStyle: 'medium',
                               timeStyle: 'short',
@@ -867,8 +867,8 @@ export default function AdminPage() {
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-3">
-                          <span className="px-3 py-1 rounded-lg bg-[#fce8dd] text-[#332d24] font-bold text-xs">
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="px-2.5 py-1 rounded-lg bg-[#fce8dd] text-[#332d24] font-bold text-xs whitespace-nowrap">
                             {stageInfo?.nameAr || order.stage}
                           </span>
 
@@ -929,22 +929,22 @@ export default function AdminPage() {
                         </div>
 
                         {/* Action Buttons: WhatsApp + Edit + Delete */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
                           <a
                             href={studentWhatsAppUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#1ebd5b] text-white text-xs font-bold transition-all shadow-xs"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#1ebd5b] text-white text-xs font-bold transition-all shadow-xs whitespace-nowrap"
                             title="محادثة واتساب"
                           >
                             <MessageCircle className="w-3.5 h-3.5 fill-white" />
-                            <span className="hidden xs:inline">واتساب</span>
+                            <span>واتساب</span>
                           </a>
 
                           <button
                             type="button"
                             onClick={() => handleOpenEditOrder(order)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#fce8dd] hover:bg-[#eb842d] text-[#332d24] hover:text-white border border-[#eb842d]/30 text-xs font-bold transition-all cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#fce8dd] hover:bg-[#eb842d] text-[#332d24] hover:text-white border border-[#eb842d]/30 text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
                             title="تعديل بيانات أو كتب الطلب"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
@@ -954,7 +954,7 @@ export default function AdminPage() {
                           <button
                             type="button"
                             onClick={() => handleDeleteOrder(order.id)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 text-xs font-bold transition-all cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
                             title="حذف الطلب نهائياً"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -1154,7 +1154,7 @@ export default function AdminPage() {
                           <button
                             type="button"
                             onClick={() => setPreviewBook(book)}
-                            className="inline-flex items-center gap-1.5 text-xs text-[#eb842d] hover:text-[#d46d18] bg-[#eb842d]/10 hover:bg-[#eb842d]/20 px-2.5 py-1.5 rounded-lg transition-colors font-bold cursor-pointer"
+                            className="inline-flex items-center gap-1.5 text-xs text-[#eb842d] hover:text-[#d46d18] bg-[#eb842d]/10 hover:bg-[#eb842d]/20 px-2.5 py-1.5 rounded-lg transition-colors font-bold cursor-pointer whitespace-nowrap"
                           >
                             <BookOpen className="w-3.5 h-3.5" />
                             <span>معاينة الكتاب</span>
@@ -1212,25 +1212,25 @@ export default function AdminPage() {
       {/* MODAL: ADD / EDIT BOOK (إضافة أو تعديل كتاب)                  */}
       {/* ------------------------------------------------------------- */}
       {isBookModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-[#332d24]/60 backdrop-blur-sm font-ibm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-6 bg-[#332d24]/60 backdrop-blur-sm font-ibm animate-in fade-in duration-200">
           <div 
-            className="bg-white rounded-3xl w-full max-w-lg flex flex-col shadow-2xl border border-[#eb842d]/30 overflow-hidden"
+            className="bg-white rounded-2xl sm:rounded-3xl w-[calc(100vw-20px)] sm:w-full max-w-lg max-h-[92vh] flex flex-col shadow-2xl border border-[#eb842d]/30 overflow-hidden relative"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="px-6 py-4 bg-[#fce8dd] border-b border-[#eb842d]/20 flex items-center justify-between">
+            <div className="px-4 sm:px-6 py-3.5 sm:py-4 bg-[#fce8dd] border-b border-[#eb842d]/20 flex items-center justify-between shrink-0">
               <h3 className="text-base sm:text-lg font-bold text-[#332d24]">
                 {editingBook ? 'تعديل بيانات الكتاب' : 'إضافة كتاب أو مذكرة جديدة'}
               </h3>
               <button
                 type="button"
                 onClick={() => setIsBookModalOpen(false)}
-                className="w-8 h-8 rounded-xl bg-white/80 text-[#332d24] flex items-center justify-center hover:text-red-600"
+                className="w-8 h-8 rounded-xl bg-white/80 text-[#332d24] flex items-center justify-center hover:text-red-600 transition-colors shrink-0"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveBook} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+            <form onSubmit={handleSaveBook} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
               <div>
                 <label className="block text-xs font-bold text-[#332d24] mb-1">
                   عنوان الكتاب أو المذكرة <span className="text-red-500">*</span>
@@ -1245,7 +1245,7 @@ export default function AdminPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-[#332d24] mb-1">
                     اسم المادة <span className="text-red-500">*</span>
@@ -1275,7 +1275,7 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-[#332d24] mb-1">
                     المرحلة الدراسية <span className="text-red-500">*</span>
@@ -1352,21 +1352,20 @@ export default function AdminPage() {
                   </div>
                 ) : editingBook && editingBook.pdfUrl ? (
                   /* State 2: Editing existing book that has an existing PDF */
-                  <div className="bg-[#fffaf6] rounded-2xl p-4 border border-[#eb842d]/30 space-y-3">
-                    <div className="flex items-center justify-between text-xs">
+                  <div className="bg-[#fffaf6] rounded-2xl p-3.5 sm:p-4 border border-[#eb842d]/30 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-2">
                       <div className="flex items-center gap-2 text-emerald-700 font-bold">
-                        <FileCheck className="w-4 h-4 text-emerald-600" />
-                        <span>يوجد ملف PDF محفوظ حالياً لهذا الكتاب</span>
+                        <FileCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>يوجد ملف PDF محفوظ لهذا الكتاب</span>
                       </div>
-                      <a
-                        href={editingBook.pdfUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-[#eb842d] hover:underline font-bold"
+                      <button
+                        type="button"
+                        onClick={() => setPreviewBook(editingBook)}
+                        className="inline-flex items-center gap-1 text-[#eb842d] hover:underline font-bold whitespace-nowrap cursor-pointer"
                       >
-                        <ExternalLink className="w-3.5 h-3.5" />
+                        <BookOpen className="w-3.5 h-3.5" />
                         <span>معاينة الملف الحالي</span>
-                      </a>
+                      </button>
                     </div>
 
                     <label className="block w-full text-center py-2.5 px-4 rounded-xl bg-white hover:bg-[#fce8dd]/60 border border-[#eb842d]/40 text-[#eb842d] font-bold text-xs cursor-pointer transition-all shadow-2xs">
@@ -1478,32 +1477,32 @@ export default function AdminPage() {
       {/* MODAL: EDIT ORDER (تعديل بيانات وكتب الطلب)                   */}
       {/* ------------------------------------------------------------- */}
       {editingOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-[#332d24]/60 backdrop-blur-sm font-ibm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-6 bg-[#332d24]/60 backdrop-blur-sm font-ibm animate-in fade-in duration-200">
           <div
-            className="bg-white rounded-3xl w-full max-w-xl flex flex-col shadow-2xl border border-[#eb842d]/30 overflow-hidden max-h-[90vh]"
+            className="bg-white rounded-2xl sm:rounded-3xl w-[calc(100vw-20px)] sm:w-full max-w-xl flex flex-col shadow-2xl border border-[#eb842d]/30 overflow-hidden max-h-[92vh] relative"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="px-6 py-4 bg-[#fce8dd] border-b border-[#eb842d]/20 flex items-center justify-between">
+            <div className="px-4 sm:px-6 py-3.5 sm:py-4 bg-[#fce8dd] border-b border-[#eb842d]/20 flex items-center justify-between shrink-0">
               <div>
                 <h3 className="text-base sm:text-lg font-bold text-[#332d24]">
                   تعديل الطلب ({editingOrder.orderCode})
                 </h3>
-                <p className="text-xs text-[#332d24]/70">
+                <p className="text-[11px] sm:text-xs text-[#332d24]/70">
                   يمكنك تعديل بيانات الطالب أو الفصل أو الكتب المطلوبة
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setEditingOrder(null)}
-                className="w-8 h-8 rounded-xl bg-white/80 text-[#332d24] flex items-center justify-center hover:text-red-600"
+                className="w-8 h-8 rounded-xl bg-white/80 text-[#332d24] flex items-center justify-center hover:text-red-600 transition-colors shrink-0"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Modal Form */}
-            <form onSubmit={handleSaveOrderEdit} className="p-6 space-y-4 overflow-y-auto flex-1">
+            <form onSubmit={handleSaveOrderEdit} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
               <div>
                 <label className="block text-xs font-bold text-[#332d24] mb-1">
                   اسم الطالب <span className="text-red-500">*</span>
@@ -1517,7 +1516,7 @@ export default function AdminPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-[#332d24] mb-1">
                     رقم الواتساب <span className="text-red-500">*</span>
@@ -1549,7 +1548,7 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-[#332d24] mb-1">
                     المرحلة الدراسية
@@ -1676,28 +1675,28 @@ export default function AdminPage() {
       {/* CUSTOM CONFIRMATION MODAL (بدل alert/confirm المتصفح القديم)     */}
       {/* ------------------------------------------------------------- */}
       {confirmDialog.isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#332d24]/60 backdrop-blur-sm font-ibm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#332d24]/60 backdrop-blur-sm font-ibm animate-in fade-in duration-200">
           <div 
-            className="bg-white rounded-3xl w-full max-w-sm p-6 flex flex-col items-center text-center shadow-2xl border-2 border-red-100 animate-in zoom-in-95 duration-200 relative"
+            className="bg-white rounded-2xl sm:rounded-3xl w-[calc(100vw-24px)] sm:w-full max-w-sm p-5 sm:p-6 flex flex-col items-center text-center shadow-2xl border-2 border-red-100 animate-in zoom-in-95 duration-200 relative"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="w-14 h-14 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mb-4 border border-red-200 shadow-xs">
-              <Trash2 className="w-7 h-7" />
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mb-3 sm:mb-4 border border-red-200 shadow-xs shrink-0">
+              <Trash2 className="w-6 h-6 sm:w-7 sm:h-7" />
             </div>
 
-            <h3 className="text-xl font-black text-[#332d24] mb-2">
+            <h3 className="text-lg sm:text-xl font-black text-[#332d24] mb-2">
               {confirmDialog.title}
             </h3>
 
-            <p className="text-xs sm:text-sm text-[#332d24]/75 mb-6 leading-relaxed">
+            <p className="text-xs sm:text-sm text-[#332d24]/75 mb-5 sm:mb-6 leading-relaxed">
               {confirmDialog.message}
             </p>
 
-            <div className="grid grid-cols-2 gap-3 w-full">
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3 w-full">
               <button
                 type="button"
                 onClick={() => setConfirmDialog((prev) => ({ ...prev, isOpen: false }))}
-                className="py-3 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 text-[#332d24] font-bold text-xs sm:text-sm transition-all cursor-pointer"
+                className="py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl bg-gray-100 hover:bg-gray-200 text-[#332d24] font-bold text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap"
               >
                 إلغاء
               </button>
@@ -1707,7 +1706,7 @@ export default function AdminPage() {
                   confirmDialog.onConfirm();
                   setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
                 }}
-                className="py-3 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition-all cursor-pointer"
+                className="py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition-all cursor-pointer whitespace-nowrap"
               >
                 {confirmDialog.confirmText || 'تأكيد الحذف'}
               </button>
