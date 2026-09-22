@@ -337,22 +337,27 @@ export default function AdminPage() {
       isActive: true,
     };
 
-    await saveBook(newBook);
-    setIsBookModalOpen(false);
-    setEditingBook(null);
-    setSelectedPdfFile(null);
-    setUploadError('');
-    setBookForm({
-      title: '',
-      subject: '',
-      stage: 'senior',
-      term: 'term_1',
-      price: 90,
-      pdfUrl: '',
-      description: '',
-      pagesCount: 150,
-    });
-    loadData();
+    try {
+      await saveBook(newBook);
+      setIsBookModalOpen(false);
+      setEditingBook(null);
+      setSelectedPdfFile(null);
+      setUploadError('');
+      setBookForm({
+        title: '',
+        subject: '',
+        stage: 'senior',
+        term: 'term_1',
+        price: 90,
+        pdfUrl: '',
+        description: '',
+        pagesCount: 150,
+      });
+      loadData();
+    } catch (err: any) {
+      console.error('Error saving book:', err);
+      setUploadError(err.message || 'حدث خطأ أثناء حفظ الكتاب.');
+    }
   };
 
   // Handle Delete Book

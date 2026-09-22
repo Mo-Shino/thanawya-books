@@ -87,7 +87,6 @@ export async function saveBook(book: Book): Promise<Book> {
         pdf_url: book.pdfUrl || null,
         sample_pdf_url: book.samplePdfUrl || book.pdfUrl || null,
         description: book.description || '',
-        pages_count: book.pagesCount || 100,
         is_active: book.isActive ?? true,
       };
 

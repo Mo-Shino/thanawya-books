@@ -23,6 +23,9 @@ CREATE TABLE IF NOT EXISTS public.books (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- إضافة عمود عدد الصفحات إن لم يكن موجوداً
+ALTER TABLE public.books ADD COLUMN IF NOT EXISTS pages_count INT DEFAULT 100;
+
 CREATE INDEX IF NOT EXISTS idx_books_stage ON public.books (stage);
 CREATE INDEX IF NOT EXISTS idx_books_term ON public.books (term);
 CREATE INDEX IF NOT EXISTS idx_books_is_active ON public.books (is_active);
