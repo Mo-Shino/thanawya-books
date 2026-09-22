@@ -472,28 +472,28 @@ export default function AdminPage() {
     <div className="min-h-screen bg-[#fffbf8] font-ibm pb-20">
       <BooksHeader isAdmin={true} />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <main className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-4 sm:space-y-6">
         
         {/* Top Header & Fast Metrics */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-[#eb842d]/20">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-4 sm:pb-6 border-b border-[#eb842d]/20">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#eb842d]/15 text-[#eb842d]">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-black bg-[#eb842d]/15 text-[#eb842d]">
                 لوحة الإشراف المركزية
               </span>
-              <span className="text-xs text-[#332d24]/50">مزامنة حية</span>
+              <span className="text-[10px] sm:text-xs text-[#332d24]/50">مزامنة حية</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-[#332d24]">
+            <h1 className="text-lg sm:text-2xl md:text-3xl font-black text-[#332d24] leading-tight">
               إدارة طلبات الطباعة ومذكرات الثانوية
             </h1>
           </div>
 
-          {/* Quick Refresh and Print Actions */}
-          <div className="flex items-center gap-3">
+          {/* Quick Refresh and Lock Actions */}
+          <div className="flex items-center gap-2 w-full md:w-auto">
             <button
               type="button"
               onClick={loadData}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-[#eb842d]/30 text-xs font-bold text-[#332d24] hover:bg-[#fce8dd]/40 transition-colors cursor-pointer"
+              className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-[#eb842d]/30 text-xs font-bold text-[#332d24] hover:bg-[#fce8dd]/40 transition-colors cursor-pointer whitespace-nowrap"
               title="تحديث البيانات"
             >
               <RefreshCw className={`w-3.5 h-3.5 text-[#eb842d] ${loading ? 'animate-spin' : ''}`} />
@@ -506,7 +506,7 @@ export default function AdminPage() {
                 sessionStorage.removeItem('thanawya_admin_auth');
                 setIsAuthenticated(false);
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-bold transition-colors cursor-pointer"
+              className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
             >
               <Unlock className="w-3.5 h-3.5" />
               <span>قفل اللوحة</span>
@@ -515,46 +515,49 @@ export default function AdminPage() {
         </div>
 
         {/* 4 Stat Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-          <div className="bg-white rounded-2xl p-3.5 sm:p-5 border border-[#eb842d]/25 shadow-sm">
-            <div className="text-[11px] sm:text-xs font-bold text-[#332d24]/60 mb-1">إجمالي النسخ للمطبعة</div>
-            <div className="text-2xl sm:text-3xl font-black text-[#eb842d]">{totalCopiesToPrint}</div>
-            <div className="text-[10px] sm:text-[11px] text-[#332d24]/60 mt-1">نسخة مطلوب طباعتها</div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+          <div className="bg-white rounded-2xl p-3 sm:p-5 border border-[#eb842d]/25 shadow-xs flex flex-col justify-between">
+            <div className="text-[10px] sm:text-xs font-bold text-[#332d24]/60 truncate">إجمالي نسخ المطبعة</div>
+            <div className="text-2xl sm:text-3xl font-black text-[#eb842d] my-0.5">{totalCopiesToPrint}</div>
+            <div className="text-[9px] sm:text-[11px] text-[#332d24]/50 truncate">نسخة مطلوبة</div>
           </div>
 
-          <div className="bg-white rounded-2xl p-3.5 sm:p-5 border border-[#eb842d]/25 shadow-sm">
-            <div className="text-[11px] sm:text-xs font-bold text-[#332d24]/60 mb-1">إجمالي طلبات الطلاب</div>
-            <div className="text-2xl sm:text-3xl font-black text-[#332d24]">{orders.length}</div>
-            <div className="text-[10px] sm:text-[11px] text-[#332d24]/60 mt-1">طلب مسجل على النظام</div>
+          <div className="bg-white rounded-2xl p-3 sm:p-5 border border-[#eb842d]/25 shadow-xs flex flex-col justify-between">
+            <div className="text-[10px] sm:text-xs font-bold text-[#332d24]/60 truncate">طلبات الطلاب</div>
+            <div className="text-2xl sm:text-3xl font-black text-[#332d24] my-0.5">{orders.length}</div>
+            <div className="text-[9px] sm:text-[11px] text-[#332d24]/50 truncate">طلب مسجل</div>
           </div>
 
-          <div className="bg-white rounded-2xl p-3.5 sm:p-5 border border-[#eb842d]/25 shadow-sm">
-            <div className="text-[11px] sm:text-xs font-bold text-[#332d24]/60 mb-1">المبيعات المحصلة</div>
-            <div className="text-2xl sm:text-3xl font-black text-emerald-700">{totalRevenue} <span className="text-xs font-bold">ج.م</span></div>
-            <div className="text-[10px] sm:text-[11px] text-[#332d24]/60 mt-1">شاملة التوصيل</div>
+          <div className="bg-white rounded-2xl p-3 sm:p-5 border border-[#eb842d]/25 shadow-xs flex flex-col justify-between">
+            <div className="text-[10px] sm:text-xs font-bold text-[#332d24]/60 truncate">المبيعات المحصلة</div>
+            <div className="text-2xl sm:text-3xl font-black text-emerald-700 my-0.5">{totalRevenue} <span className="text-[10px] font-bold">ج.م</span></div>
+            <div className="text-[9px] sm:text-[11px] text-[#332d24]/50 truncate">شاملة التوصيل</div>
           </div>
 
-          <div className="bg-white rounded-2xl p-3.5 sm:p-5 border border-[#eb842d]/25 shadow-sm">
-            <div className="text-[11px] sm:text-xs font-bold text-[#332d24]/60 mb-1">الكتب المتاحة</div>
-            <div className="text-2xl sm:text-3xl font-black text-[#332d24]">{books.length}</div>
-            <div className="text-[10px] sm:text-[11px] text-[#332d24]/60 mt-1">مذكرات مفعلة</div>
+          <div className="bg-white rounded-2xl p-3 sm:p-5 border border-[#eb842d]/25 shadow-xs flex flex-col justify-between">
+            <div className="text-[10px] sm:text-xs font-bold text-[#332d24]/60 truncate">الكتب والمذكرات</div>
+            <div className="text-2xl sm:text-3xl font-black text-[#332d24] my-0.5">{books.length}</div>
+            <div className="text-[9px] sm:text-[11px] text-[#332d24]/50 truncate">مذكرات مفعلة</div>
           </div>
         </div>
 
-        {/* Tab Navigation (Horizontal Touch Scroll on Mobile) */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b-2 border-[#eb842d]/20 no-scrollbar w-full flex-nowrap">
+        {/* Tab Navigation (Segmented on Mobile, Clean on Desktop) */}
+        <div className="grid grid-cols-3 gap-1.5 p-1 bg-[#fce8dd]/60 rounded-2xl border border-[#eb842d]/25 sm:flex sm:items-center sm:gap-2 sm:bg-transparent sm:p-0 sm:border-0 sm:border-b-2 sm:border-[#eb842d]/20 sm:rounded-none">
           <button
             type="button"
             onClick={() => setActiveTab('manifest')}
-            className={`flex items-center gap-2 px-3.5 sm:px-5 py-2.5 sm:py-3 rounded-2xl font-bold text-xs sm:text-base transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+            className={`flex items-center justify-center gap-1 sm:gap-2 py-2 sm:py-3 px-1 sm:px-5 rounded-xl sm:rounded-2xl font-black text-[11px] sm:text-base transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'manifest'
-                ? 'bg-[#eb842d] text-white shadow-md shadow-[#eb842d]/25'
-                : 'bg-white/80 hover:bg-white text-[#332d24] border border-[#eb842d]/20'
+                ? 'bg-[#eb842d] text-white shadow-sm'
+                : 'text-[#332d24] hover:bg-white/80'
             }`}
           >
-            <Printer className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span>تقرير المطبعة المجمع</span>
-            <span className="px-2 py-0.5 rounded-full text-xs bg-white/20 text-white font-extrabold">
+            <Printer className="w-3.5 h-3.5 sm:w-5 sm:h-5 shrink-0" />
+            <span className="hidden sm:inline">تقرير المطبعة المجمع</span>
+            <span className="sm:hidden">المطبعة</span>
+            <span className={`px-1.5 py-0.2 rounded-full text-[9px] sm:text-xs font-black ${
+              activeTab === 'manifest' ? 'bg-white/25 text-white' : 'bg-[#eb842d]/20 text-[#eb842d]'
+            }`}>
               {totalCopiesToPrint}
             </span>
           </button>
@@ -562,15 +565,18 @@ export default function AdminPage() {
           <button
             type="button"
             onClick={() => setActiveTab('orders')}
-            className={`flex items-center gap-2 px-3.5 sm:px-5 py-2.5 sm:py-3 rounded-2xl font-bold text-xs sm:text-base transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+            className={`flex items-center justify-center gap-1 sm:gap-2 py-2 sm:py-3 px-1 sm:px-5 rounded-xl sm:rounded-2xl font-black text-[11px] sm:text-base transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'orders'
-                ? 'bg-[#eb842d] text-white shadow-md shadow-[#eb842d]/25'
-                : 'bg-white/80 hover:bg-white text-[#332d24] border border-[#eb842d]/20'
+                ? 'bg-[#eb842d] text-white shadow-sm'
+                : 'text-[#332d24] hover:bg-white/80'
             }`}
           >
-            <Package className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span>طلبات الطلاب</span>
-            <span className="px-2 py-0.5 rounded-full text-xs bg-white/20 text-white font-extrabold">
+            <Package className="w-3.5 h-3.5 sm:w-5 sm:h-5 shrink-0" />
+            <span className="hidden sm:inline">طلبات الطلاب</span>
+            <span className="sm:hidden">الطلبات</span>
+            <span className={`px-1.5 py-0.2 rounded-full text-[9px] sm:text-xs font-black ${
+              activeTab === 'orders' ? 'bg-white/25 text-white' : 'bg-[#eb842d]/20 text-[#eb842d]'
+            }`}>
               {orders.length}
             </span>
           </button>
@@ -578,15 +584,18 @@ export default function AdminPage() {
           <button
             type="button"
             onClick={() => setActiveTab('books')}
-            className={`flex items-center gap-2 px-3.5 sm:px-5 py-2.5 sm:py-3 rounded-2xl font-bold text-xs sm:text-base transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+            className={`flex items-center justify-center gap-1 sm:gap-2 py-2 sm:py-3 px-1 sm:px-5 rounded-xl sm:rounded-2xl font-black text-[11px] sm:text-base transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'books'
-                ? 'bg-[#eb842d] text-white shadow-md shadow-[#eb842d]/25'
-                : 'bg-white/80 hover:bg-white text-[#332d24] border border-[#eb842d]/20'
+                ? 'bg-[#eb842d] text-white shadow-sm'
+                : 'text-[#332d24] hover:bg-white/80'
             }`}
           >
-            <BookPlus className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span>إدارة الكتب والـ PDF</span>
-            <span className="px-2 py-0.5 rounded-full text-xs bg-white/20 text-white font-extrabold">
+            <BookPlus className="w-3.5 h-3.5 sm:w-5 sm:h-5 shrink-0" />
+            <span className="hidden sm:inline">إدارة الكتب والـ PDF</span>
+            <span className="sm:hidden">الكتب</span>
+            <span className={`px-1.5 py-0.2 rounded-full text-[9px] sm:text-xs font-black ${
+              activeTab === 'books' ? 'bg-white/25 text-white' : 'bg-[#eb842d]/20 text-[#eb842d]'
+            }`}>
               {books.length}
             </span>
           </button>
@@ -596,16 +605,16 @@ export default function AdminPage() {
         {/* TAB 1: PRINTING PRESS MANIFEST (تقرير المطبعة الذكي)          */}
         {/* ------------------------------------------------------------- */}
         {activeTab === 'manifest' && (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             
             {/* Control Bar: Filters & Print/Copy Buttons */}
-            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#eb842d]/25 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+            <div className="bg-white rounded-2xl p-3 sm:p-5 border border-[#eb842d]/25 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
               
               {/* Stage Filter */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
                 <span className="text-xs font-bold text-[#332d24]/60 ml-1 shrink-0">المرحلة:</span>
                 {[
-                  { id: 'all', label: 'كافة المراحل' },
+                  { id: 'all', label: 'الكل' },
                   { id: 'senior', label: 'سينيور (3 ث)' },
                   { id: 'wheeler', label: 'ويلر (2 ث)' },
                   { id: 'junior', label: 'جونيور (1 ث)' },
@@ -614,7 +623,7 @@ export default function AdminPage() {
                     key={s.id}
                     type="button"
                     onClick={() => setManifestStageFilter(s.id)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                    className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                       manifestStageFilter === s.id
                         ? 'bg-[#eb842d] text-white shadow-xs'
                         : 'bg-[#fce8dd]/60 text-[#332d24] hover:bg-[#fce8dd]'
@@ -626,22 +635,22 @@ export default function AdminPage() {
               </div>
 
               {/* Action Buttons: Copy WhatsApp & Print */}
-              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
+              <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
                 <button
                   type="button"
                   onClick={handleCopyManifest}
-                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#1ebd5b] text-white text-xs sm:text-sm font-extrabold shadow-sm transition-all cursor-pointer whitespace-nowrap"
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#1ebd5b] text-white text-xs sm:text-sm font-black shadow-xs transition-all cursor-pointer whitespace-nowrap"
                   title="نسخ صيغة الواتساب لإرسالها لمسؤول المطبعة"
                 >
                   {copiedManifest ? (
                     <>
                       <Check className="w-4 h-4 stroke-[2.5]" />
-                      <span>تم نسخ الرسالة للواتساب!</span>
+                      <span>تم النسخ! ✓</span>
                     </>
                   ) : (
                     <>
-                      <Copy className="w-4 h-4" />
-                      <span>نسخ تقرير المطبعة</span>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>نسخ للواتساب</span>
                     </>
                   )}
                 </button>
@@ -649,9 +658,9 @@ export default function AdminPage() {
                 <button
                   type="button"
                   onClick={handlePrint}
-                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl bg-white border border-[#eb842d]/30 text-[#332d24] hover:bg-[#fce8dd]/40 text-xs sm:text-sm font-extrabold transition-all cursor-pointer whitespace-nowrap"
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-white border border-[#eb842d]/30 text-[#332d24] hover:bg-[#fce8dd]/40 text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap"
                 >
-                  <Printer className="w-4 h-4 text-[#eb842d]" />
+                  <Printer className="w-3.5 h-3.5 text-[#eb842d]" />
                   <span>طباعة A4</span>
                 </button>
               </div>
@@ -662,20 +671,20 @@ export default function AdminPage() {
             <div className="bg-white rounded-3xl border border-[#eb842d]/25 shadow-sm overflow-hidden" id="printable-manifest">
               
               {/* Manifest Header */}
-              <div className="p-6 bg-[#fce8dd]/60 border-b border-[#eb842d]/25 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="p-3.5 sm:p-6 bg-[#fce8dd]/60 border-b border-[#eb842d]/25 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <h3 className="text-xl font-black text-[#332d24]">
-                    بيان أمر الطباعة المجمع للمطبعة (Press Manifest)
+                  <h3 className="text-sm sm:text-lg md:text-xl font-black text-[#332d24]">
+                    بيان أمر الطباعة المجمع للمطبعة
                   </h3>
-                  <p className="text-xs text-[#332d24]/70">
-                    هذا الكشف يجمع كل الكتب المطلوبة من جميع الطلاب مع حصر الكمية المطلوبة بدقة لكل مادة
+                  <p className="text-[10px] sm:text-xs text-[#332d24]/70 mt-0.5">
+                    حصر الكميات المطلوبة بدقة لكل مادة ومرحلة
                   </p>
                 </div>
-                <div className="text-left">
-                  <span className="text-xs font-bold text-[#332d24]/60">إجمالي النسخ:</span>
-                  <div className="text-2xl font-black text-[#eb842d]">
+                <div className="flex items-center justify-between sm:block text-right sm:text-left pt-2 sm:pt-0 border-t sm:border-0 border-[#eb842d]/15">
+                  <span className="text-[11px] sm:text-xs font-bold text-[#332d24]/60 ml-2">إجمالي النسخ:</span>
+                  <span className="text-lg sm:text-2xl font-black text-[#eb842d]">
                     {filteredManifest.reduce((acc, m) => acc + m.quantity, 0)} نسخة
-                  </div>
+                  </span>
                 </div>
               </div>
 
