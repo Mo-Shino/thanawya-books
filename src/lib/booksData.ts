@@ -120,7 +120,7 @@ export const INITIAL_BOOKS: Book[] = [
     subject: 'تجارة واقتصاد',
     stage: 'wheeler',
     term: 'term_1',
-    price: 45,
+    price: 40,
     pdfUrl: '/books/wheeler_digital_marketing.pdf',
     samplePdfUrl: '/books/wheeler_digital_marketing.pdf',
     isActive: true,
