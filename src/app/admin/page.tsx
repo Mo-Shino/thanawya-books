@@ -25,6 +25,7 @@ import {
   uploadBookPdf,
 } from '@/lib/booksService';
 import { BooksHeader } from '@/components/BooksHeader';
+import { PdfPreviewModal } from '@/components/PdfPreviewModal';
 import {
   Printer,
   Package,
@@ -76,6 +77,9 @@ export default function AdminPage() {
   const [orderSearchQuery, setOrderSearchQuery] = useState('');
   const [orderStageFilter, setOrderStageFilter] = useState<string>('all');
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>('all');
+
+  // PDF Preview In-App Modal
+  const [previewBook, setPreviewBook] = useState<Book | null>(null);
 
   // Book Add/Edit Modal
   const [isBookModalOpen, setIsBookModalOpen] = useState(false);
@@ -1147,15 +1151,14 @@ export default function AdminPage() {
                       {/* Actions */}
                       <div className="flex items-center justify-between gap-2 pt-3 border-t border-[#eb842d]/15">
                         {book.pdfUrl && (
-                          <a
-                            href={book.pdfUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs text-[#eb842d] hover:underline font-semibold"
+                          <button
+                            type="button"
+                            onClick={() => setPreviewBook(book)}
+                            className="inline-flex items-center gap-1.5 text-xs text-[#eb842d] hover:text-[#d46d18] bg-[#eb842d]/10 hover:bg-[#eb842d]/20 px-2.5 py-1.5 rounded-lg transition-colors font-bold cursor-pointer"
                           >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                            <span>معاينة الـ PDF</span>
-                          </a>
+                            <BookOpen className="w-3.5 h-3.5" />
+                            <span>معاينة الكتاب</span>
+                          </button>
                         )}
 
                         <div className="flex items-center gap-2">
@@ -1712,6 +1715,13 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      {/* PDF In-App Preview Modal */}
+      <PdfPreviewModal
+        book={previewBook}
+        isOpen={Boolean(previewBook)}
+        onClose={() => setPreviewBook(null)}
+      />
 
     </div>
   );

@@ -1,4 +1,5 @@
 import { Book, Order, OrderItem, StageId, PrintingManifestItem, OrderStatus } from '@/types/books';
+import { INITIAL_BOOKS } from './booksData';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 
 const LOCAL_STORAGE_BOOKS_KEY = 'thanawya_books_catalog_v1';
@@ -15,7 +16,7 @@ export function calculateDeliveryFee(count: number): number {
   return 15;
 }
 
-// دالة جلب قائمة الكتب (المصدر الحقيقي هو Supabase)
+// دالة جلب قائمة الكتب
 export async function getBooks(): Promise<Book[]> {
   try {
     if (supabase && isSupabaseConfigured) {
@@ -25,7 +26,7 @@ export async function getBooks(): Promise<Book[]> {
         .eq('is_active', true)
         .order('created_at', { ascending: true });
 
-      if (!error && data) {
+      if (!error && data && data.length > 0) {
         const booksList: Book[] = data.map((b: any) => ({
           id: b.id,
           title: b.title,
@@ -42,7 +43,7 @@ export async function getBooks(): Promise<Book[]> {
           createdAt: b.created_at,
         }));
 
-        // مزامنة الكاش المحلي مع قاعدة البيانات الحقيقية
+        // مزامنة الكاش المحلي مع قاعدة البيانات
         if (typeof window !== 'undefined') {
           localStorage.setItem(LOCAL_STORAGE_BOOKS_KEY, JSON.stringify(booksList));
         }
@@ -58,19 +59,24 @@ export async function getBooks(): Promise<Book[]> {
     console.warn('Supabase fetch books error, falling back to local cache:', err);
   }
 
-  // في حال تعطل الاتصال بالإنترنت فقط، يتم القراءة من الكاش المحلي
+  // في حال تعطل الاتصال بالإنترنت، يتم القراءة من الكاش المحلي
   if (typeof window !== 'undefined') {
     const cached = localStorage.getItem(LOCAL_STORAGE_BOOKS_KEY);
     if (cached) {
       try {
-        return JSON.parse(cached);
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
       } catch (e) {
         console.error('Error parsing cached books', e);
       }
     }
+    // حفظ الكتب الرسمية في الكاش
+    localStorage.setItem(LOCAL_STORAGE_BOOKS_KEY, JSON.stringify(INITIAL_BOOKS));
   }
 
-  return [];
+  return INITIAL_BOOKS;
 }
 
 // دالة حفظ أو تحديث كتاب (للأدمن)
