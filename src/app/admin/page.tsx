@@ -17,6 +17,7 @@ import {
   saveBook,
   deleteBook,
   updateOrderStatus,
+  toggleOrderPayment,
   deleteOrder,
   updateOrder,
   calculateDeliveryFee,
@@ -37,6 +38,7 @@ import {
   MessageCircle,
   Clock,
   CheckCircle,
+  CheckCircle2,
   Truck,
   Trash2,
   Edit2,
@@ -55,6 +57,15 @@ import {
   AlertCircle,
   Loader2,
   BookOpen,
+  CheckSquare,
+  Square,
+  DollarSign,
+  Coins,
+  Wallet,
+  CreditCard,
+  UserCheck,
+  Users,
+  Filter,
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -72,11 +83,17 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [copiedManifest, setCopiedManifest] = useState(false);
 
-  // Filters
+  // Filters & Selection
   const [manifestStageFilter, setManifestStageFilter] = useState<string>('all');
+  const [manifestSource, setManifestSource] = useState<'selected' | 'paid' | 'all'>('paid');
   const [orderSearchQuery, setOrderSearchQuery] = useState('');
   const [orderStageFilter, setOrderStageFilter] = useState<string>('all');
-  const [orderStatusFilter, setOrderStatusFilter] = useState<string>('all');
+  const [orderPaymentFilter, setOrderPaymentFilter] = useState<'all' | 'paid' | 'unpaid'>('all');
+  const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set());
+
+  // Inline Paid Amount Editing
+  const [editingPaidAmountOrderId, setEditingPaidAmountOrderId] = useState<string | null>(null);
+  const [tempPaidAmount, setTempPaidAmount] = useState<string>('');
 
   // PDF Preview In-App Modal
   const [previewBook, setPreviewBook] = useState<Book | null>(null);
@@ -255,12 +272,57 @@ export default function AdminPage() {
     }
   }, [isAuthenticated]);
 
+  // -------------------------------------------------------------
+  // Financial & Selection Computations
+  // -------------------------------------------------------------
+  const validOrders = useMemo(() => orders.filter((o) => o.status !== 'cancelled'), [orders]);
+
+  const paidOrders = useMemo(() => validOrders.filter((o) => o.isPaid), [validOrders]);
+  const unpaidOrders = useMemo(() => validOrders.filter((o) => !o.isPaid), [validOrders]);
+
+  const totalCollectedMoney = useMemo(() => {
+    return paidOrders.reduce((sum, o) => sum + (o.paidAmount !== undefined && o.paidAmount > 0 ? o.paidAmount : o.totalPrice), 0);
+  }, [paidOrders]);
+
+  const totalRemainingMoney = useMemo(() => {
+    return unpaidOrders.reduce((sum, o) => sum + o.totalPrice, 0);
+  }, [unpaidOrders]);
+
+  const totalOrdersValue = useMemo(() => {
+    return validOrders.reduce((sum, o) => sum + o.totalPrice, 0);
+  }, [validOrders]);
+
+  // Selected Orders Calculations
+  const selectedOrdersList = useMemo(() => {
+    return orders.filter((o) => selectedOrderIds.has(o.id));
+  }, [orders, selectedOrderIds]);
+
+  const selectedTotalAmount = useMemo(() => {
+    return selectedOrdersList.reduce((sum, o) => sum + o.totalPrice, 0);
+  }, [selectedOrdersList]);
+
+  const selectedTotalCopies = useMemo(() => {
+    return selectedOrdersList.reduce((sum, o) => sum + o.totalBooks, 0);
+  }, [selectedOrdersList]);
+
+  // Orders pool for Printing Manifest based on source selector
+  const ordersForManifest = useMemo(() => {
+    if (manifestSource === 'selected' && selectedOrdersList.length > 0) {
+      return selectedOrdersList;
+    }
+    if (manifestSource === 'all') {
+      return validOrders;
+    }
+    // Default is 'paid'
+    return paidOrders;
+  }, [manifestSource, selectedOrdersList, paidOrders, validOrders]);
+
   // Generate Printing Press Manifest
   const fullManifest = useMemo(() => {
-    return generatePrintingManifest(orders);
-  }, [orders]);
+    return generatePrintingManifest(ordersForManifest);
+  }, [ordersForManifest]);
 
-  // Filtered manifest
+  // Filtered manifest by stage
   const filteredManifest = useMemo(() => {
     if (manifestStageFilter === 'all') return fullManifest;
     return fullManifest.filter((m) => m.stage === manifestStageFilter);
@@ -268,18 +330,16 @@ export default function AdminPage() {
 
   // Summary counts for press
   const totalCopiesToPrint = useMemo(() => {
-    return fullManifest.reduce((acc, m) => acc + m.quantity, 0);
-  }, [fullManifest]);
+    return filteredManifest.reduce((acc, m) => acc + m.quantity, 0);
+  }, [filteredManifest]);
 
-  const totalRevenue = useMemo(() => {
-    return orders
-      .filter((o) => o.status !== 'cancelled')
-      .reduce((acc, o) => acc + o.totalPrice, 0);
-  }, [orders]);
+  const manifestStudentNames = useMemo(() => {
+    return Array.from(new Set(ordersForManifest.map((o) => o.studentName)));
+  }, [ordersForManifest]);
 
   // Copy WhatsApp manifest message
   const handleCopyManifest = () => {
-    const text = formatPrintingPressWhatsAppMessage(filteredManifest);
+    const text = formatPrintingPressWhatsAppMessage(filteredManifest, manifestStudentNames);
     navigator.clipboard.writeText(text);
     setCopiedManifest(true);
     setTimeout(() => setCopiedManifest(false), 2500);
@@ -290,12 +350,73 @@ export default function AdminPage() {
     window.print();
   };
 
-  // Handle Order Status change
-  const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
-    await updateOrderStatus(orderId, newStatus);
+  // Multi-Selection Handlers
+  const handleToggleOrderSelection = (orderId: string) => {
+    setSelectedOrderIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(orderId)) {
+        next.delete(orderId);
+      } else {
+        next.add(orderId);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAllFiltered = (ordersToSelect: Order[]) => {
+    setSelectedOrderIds((prev) => {
+      const next = new Set(prev);
+      ordersToSelect.forEach((o) => next.add(o.id));
+      return next;
+    });
+  };
+
+  const handleSelectAllPaid = () => {
+    setSelectedOrderIds(new Set(paidOrders.map((o) => o.id)));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedOrderIds(new Set());
+  };
+
+  // Direct Payment Toggle Handler
+  const handleTogglePayment = async (order: Order) => {
+    const newIsPaid = !order.isPaid;
+    const newPaidAmount = newIsPaid ? order.totalPrice : 0;
+    
+    // Instant UI update
     setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
+      prev.map((o) =>
+        o.id === order.id
+          ? {
+              ...o,
+              isPaid: newIsPaid,
+              status: newIsPaid ? 'printing' : 'pending',
+              paidAmount: newPaidAmount,
+            }
+          : o
+      )
     );
+
+    await toggleOrderPayment(order.id, newIsPaid, newPaidAmount);
+  };
+
+  // Save Custom Paid Amount
+  const handleSaveCustomPaidAmount = async (orderId: string, amount: number) => {
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === orderId
+          ? {
+              ...o,
+              isPaid: true,
+              status: 'printing',
+              paidAmount: amount,
+            }
+          : o
+      )
+    );
+    setEditingPaidAmountOrderId(null);
+    await toggleOrderPayment(orderId, true, amount);
   };
 
   // Handle Book Save
@@ -382,7 +503,8 @@ export default function AdminPage() {
   const filteredOrders = useMemo(() => {
     return orders.filter((o) => {
       if (orderStageFilter !== 'all' && o.stage !== orderStageFilter) return false;
-      if (orderStatusFilter !== 'all' && o.status !== orderStatusFilter) return false;
+      if (orderPaymentFilter === 'paid' && !o.isPaid) return false;
+      if (orderPaymentFilter === 'unpaid' && o.isPaid) return false;
       if (orderSearchQuery.trim()) {
         const q = orderSearchQuery.toLowerCase().trim();
         const matchName = o.studentName.toLowerCase().includes(q);
@@ -393,7 +515,7 @@ export default function AdminPage() {
       }
       return true;
     });
-  }, [orders, orderStageFilter, orderStatusFilter, orderSearchQuery]);
+  }, [orders, orderStageFilter, orderPaymentFilter, orderSearchQuery]);
 
   // Stage name helper
   const getStageNameAr = (st: StageId) => {
@@ -514,30 +636,76 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* 4 Stat Cards */}
+        {/* 4 Financial & Operational Stat Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
-          <div className="bg-white rounded-2xl p-3 sm:p-5 border border-[#eb842d]/25 shadow-xs flex flex-col justify-between">
-            <div className="text-[10px] sm:text-xs font-bold text-[#332d24]/60 truncate">إجمالي نسخ المطبعة</div>
-            <div className="text-2xl sm:text-3xl font-black text-[#eb842d] my-0.5">{totalCopiesToPrint}</div>
-            <div className="text-[9px] sm:text-[11px] text-[#332d24]/50 truncate">نسخة مطلوبة</div>
+          {/* Card 1: Collected Money */}
+          <div className="bg-gradient-to-br from-white to-emerald-50/40 rounded-2xl p-3 sm:p-5 border border-emerald-500/25 shadow-xs flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] sm:text-xs font-bold text-emerald-800 truncate">المحصل مع الأدمن الآن</span>
+              <span className="p-1 rounded-lg bg-emerald-100 text-emerald-700 hidden sm:block">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+              </span>
+            </div>
+            <div className="text-xl sm:text-3xl font-black text-emerald-700 my-1">
+              {totalCollectedMoney} <span className="text-[11px] sm:text-sm font-bold">ج.م</span>
+            </div>
+            <div className="text-[9px] sm:text-[11px] font-semibold text-emerald-800/80 truncate flex items-center gap-1">
+              <span>✓ تم الدفع من</span>
+              <strong className="text-emerald-900">{paidOrders.length} طالب</strong>
+            </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-3 sm:p-5 border border-[#eb842d]/25 shadow-xs flex flex-col justify-between">
-            <div className="text-[10px] sm:text-xs font-bold text-[#332d24]/60 truncate">طلبات الطلاب</div>
-            <div className="text-2xl sm:text-3xl font-black text-[#332d24] my-0.5">{orders.length}</div>
-            <div className="text-[9px] sm:text-[11px] text-[#332d24]/50 truncate">طلب مسجل</div>
+          {/* Card 2: Remaining Uncollected Money */}
+          <div className="bg-gradient-to-br from-white to-amber-50/40 rounded-2xl p-3 sm:p-5 border border-amber-500/25 shadow-xs flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] sm:text-xs font-bold text-amber-900 truncate">المتبقي للتحصيل</span>
+              <span className="p-1 rounded-lg bg-amber-100 text-amber-700 hidden sm:block">
+                <Clock className="w-3.5 h-3.5" />
+              </span>
+            </div>
+            <div className="text-xl sm:text-3xl font-black text-amber-700 my-1">
+              {totalRemainingMoney} <span className="text-[11px] sm:text-sm font-bold">ج.م</span>
+            </div>
+            <div className="text-[9px] sm:text-[11px] font-semibold text-amber-900/80 truncate flex items-center gap-1">
+              <span>⏳ لم يدفع</span>
+              <strong className="text-amber-950">{unpaidOrders.length} طالب</strong>
+            </div>
           </div>
 
+          {/* Card 3: Total Orders Value */}
           <div className="bg-white rounded-2xl p-3 sm:p-5 border border-[#eb842d]/25 shadow-xs flex flex-col justify-between">
-            <div className="text-[10px] sm:text-xs font-bold text-[#332d24]/60 truncate">المبيعات المحصلة</div>
-            <div className="text-2xl sm:text-3xl font-black text-emerald-700 my-0.5">{totalRevenue} <span className="text-[10px] font-bold">ج.م</span></div>
-            <div className="text-[9px] sm:text-[11px] text-[#332d24]/50 truncate">شاملة التوصيل</div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] sm:text-xs font-bold text-[#332d24]/70 truncate">إجمالي قيمة الطلبات</span>
+              <span className="p-1 rounded-lg bg-[#fce8dd] text-[#eb842d] hidden sm:block">
+                <Coins className="w-3.5 h-3.5" />
+              </span>
+            </div>
+            <div className="text-xl sm:text-3xl font-black text-[#332d24] my-1">
+              {totalOrdersValue} <span className="text-[11px] sm:text-sm font-bold">ج.م</span>
+            </div>
+            <div className="text-[9px] sm:text-[11px] font-semibold text-[#332d24]/60 truncate">
+              إجمالي {validOrders.length} طلب نشط
+            </div>
           </div>
 
+          {/* Card 4: Copies to print */}
           <div className="bg-white rounded-2xl p-3 sm:p-5 border border-[#eb842d]/25 shadow-xs flex flex-col justify-between">
-            <div className="text-[10px] sm:text-xs font-bold text-[#332d24]/60 truncate">الكتب والمذكرات</div>
-            <div className="text-2xl sm:text-3xl font-black text-[#332d24] my-0.5">{books.length}</div>
-            <div className="text-[9px] sm:text-[11px] text-[#332d24]/50 truncate">مذكرات مفعلة</div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] sm:text-xs font-bold text-[#eb842d] truncate">نسخ المطبعة المطلوبة</span>
+              <span className="p-1 rounded-lg bg-[#fce8dd] text-[#eb842d] hidden sm:block">
+                <Printer className="w-3.5 h-3.5" />
+              </span>
+            </div>
+            <div className="text-xl sm:text-3xl font-black text-[#eb842d] my-1">
+              {totalCopiesToPrint} <span className="text-[11px] sm:text-sm font-bold">نسخة</span>
+            </div>
+            <div className="text-[9px] sm:text-[11px] font-semibold text-[#332d24]/60 truncate">
+              {manifestSource === 'selected'
+                ? `لـ ${selectedOrdersList.length} طالب محددين`
+                : manifestSource === 'paid'
+                ? `لكل من دفع (${paidOrders.length} طالب)`
+                : `لكافة الطلبات (${validOrders.length} طالب)`}
+            </div>
           </div>
         </div>
 
@@ -607,62 +775,131 @@ export default function AdminPage() {
         {activeTab === 'manifest' && (
           <div className="space-y-4 sm:space-y-6">
             
-            {/* Control Bar: Filters & Print/Copy Buttons */}
-            <div className="bg-white rounded-2xl p-3 sm:p-5 border border-[#eb842d]/25 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+            {/* Control Bar: Source Selector, Filters & Print/Copy Buttons */}
+            <div className="bg-white rounded-2xl p-3.5 sm:p-5 border border-[#eb842d]/25 shadow-sm space-y-3">
               
-              {/* Stage Filter */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
-                <span className="text-xs font-bold text-[#332d24]/60 ml-1 shrink-0">المرحلة:</span>
-                {[
-                  { id: 'all', label: 'الكل' },
-                  { id: 'senior', label: 'سينيور (3 ث)' },
-                  { id: 'wheeler', label: 'ويلر (2 ث)' },
-                  { id: 'junior', label: 'جونيور (1 ث)' },
-                ].map((s) => (
+              {/* Row 1: Source Selector (Selected vs Paid vs All) */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#eb842d]/15">
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 no-scrollbar">
+                  <span className="text-xs font-black text-[#332d24] ml-1 shrink-0 flex items-center gap-1">
+                    <Filter className="w-3.5 h-3.5 text-[#eb842d]" />
+                    <span>مصدر التقرير:</span>
+                  </span>
+                  
                   <button
-                    key={s.id}
                     type="button"
-                    onClick={() => setManifestStageFilter(s.id)}
-                    className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                      manifestStageFilter === s.id
+                    onClick={() => setManifestSource('selected')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
+                      manifestSource === 'selected'
                         ? 'bg-[#eb842d] text-white shadow-xs'
                         : 'bg-[#fce8dd]/60 text-[#332d24] hover:bg-[#fce8dd]'
                     }`}
                   >
-                    {s.label}
+                    <span>🎯 الطلاب المحددين فقط</span>
+                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                      manifestSource === 'selected' ? 'bg-white/20 text-white' : 'bg-[#eb842d]/20 text-[#eb842d]'
+                    }`}>
+                      {selectedOrderIds.size}
+                    </span>
                   </button>
-                ))}
+
+                  <button
+                    type="button"
+                    onClick={() => setManifestSource('paid')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
+                      manifestSource === 'paid'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
+                    }`}
+                  >
+                    <span>💰 كل من دفع</span>
+                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                      manifestSource === 'paid' ? 'bg-white/20 text-white' : 'bg-emerald-200 text-emerald-900'
+                    }`}>
+                      {paidOrders.length}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setManifestSource('all')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
+                      manifestSource === 'all'
+                        ? 'bg-[#332d24] text-white shadow-xs'
+                        : 'bg-[#fce8dd]/40 text-[#332d24]/80 hover:bg-[#fce8dd]'
+                    }`}
+                  >
+                    <span>📦 كافة الطلبات</span>
+                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                      manifestSource === 'all' ? 'bg-white/20 text-white' : 'bg-[#332d24]/15 text-[#332d24]'
+                    }`}>
+                      {validOrders.length}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Print and WhatsApp buttons */}
+                <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleCopyManifest}
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[#25D366] hover:bg-[#1ebd5b] text-white text-xs sm:text-sm font-black shadow-xs transition-all cursor-pointer whitespace-nowrap"
+                    title="نسخ صيغة الواتساب لإرسالها لمسؤول المطبعة"
+                  >
+                    {copiedManifest ? (
+                      <>
+                        <Check className="w-4 h-4 stroke-[2.5]" />
+                        <span>تم النسخ! ✓</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>نسخ للواتساب</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handlePrint}
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-[#eb842d]/30 text-[#332d24] hover:bg-[#fce8dd]/40 text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap"
+                  >
+                    <Printer className="w-3.5 h-3.5 text-[#eb842d]" />
+                    <span>طباعة A4</span>
+                  </button>
+                </div>
               </div>
 
-              {/* Action Buttons: Copy WhatsApp & Print */}
-              <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
-                <button
-                  type="button"
-                  onClick={handleCopyManifest}
-                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#1ebd5b] text-white text-xs sm:text-sm font-black shadow-xs transition-all cursor-pointer whitespace-nowrap"
-                  title="نسخ صيغة الواتساب لإرسالها لمسؤول المطبعة"
-                >
-                  {copiedManifest ? (
-                    <>
-                      <Check className="w-4 h-4 stroke-[2.5]" />
-                      <span>تم النسخ! ✓</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5" />
-                      <span>نسخ للواتساب</span>
-                    </>
-                  )}
-                </button>
+              {/* Row 2: Stage Filter & Batch Info */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 no-scrollbar">
+                  <span className="text-xs font-bold text-[#332d24]/60 ml-1 shrink-0">المرحلة:</span>
+                  {[
+                    { id: 'all', label: 'الكل' },
+                    { id: 'senior', label: 'سينيور (3 ث)' },
+                    { id: 'wheeler', label: 'ويلر (2 ث)' },
+                    { id: 'junior', label: 'جونيور (1 ث)' },
+                  ].map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setManifestStageFilter(s.id)}
+                      className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                        manifestStageFilter === s.id
+                          ? 'bg-[#eb842d] text-white shadow-xs'
+                          : 'bg-[#fce8dd]/60 text-[#332d24] hover:bg-[#fce8dd]'
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
 
-                <button
-                  type="button"
-                  onClick={handlePrint}
-                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-white border border-[#eb842d]/30 text-[#332d24] hover:bg-[#fce8dd]/40 text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap"
-                >
-                  <Printer className="w-3.5 h-3.5 text-[#eb842d]" />
-                  <span>طباعة A4</span>
-                </button>
+                <div className="text-[11px] font-bold text-[#332d24]/70 flex items-center gap-1.5 bg-[#fce8dd]/40 px-3 py-1.5 rounded-xl border border-[#eb842d]/20">
+                  <Users className="w-3.5 h-3.5 text-[#eb842d]" />
+                  <span>الطلاب المشمولين في هذا الأمر:</span>
+                  <strong className="text-[#eb842d]">{manifestStudentNames.length} طالب</strong>
+                </div>
               </div>
 
             </div>
@@ -677,7 +914,11 @@ export default function AdminPage() {
                     بيان أمر الطباعة المجمع للمطبعة
                   </h3>
                   <p className="text-[10px] sm:text-xs text-[#332d24]/70 mt-0.5">
-                    حصر الكميات المطلوبة بدقة لكل مادة ومرحلة
+                    {manifestSource === 'selected'
+                      ? `حصر كميات الكتب للطلاب المحددين يدوياً (${selectedOrdersList.length} طالب)`
+                      : manifestSource === 'paid'
+                      ? `حصر كميات الكتب لكل الطلاب الذين دفعوا (${paidOrders.length} طالب)`
+                      : `حصر كميات الكتب لكافة الطلبات (${validOrders.length} طالب)`}
                   </p>
                 </div>
                 <div className="flex items-center justify-between sm:block text-right sm:text-left pt-2 sm:pt-0 border-t sm:border-0 border-[#eb842d]/15">
@@ -791,50 +1032,115 @@ export default function AdminPage() {
         {activeTab === 'orders' && (
           <div className="space-y-6">
             
-            {/* Search and Filters */}
-            <div className="bg-white rounded-2xl p-5 border border-[#eb842d]/25 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+            {/* Search, Filters, and Batch Actions */}
+            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#eb842d]/25 shadow-sm space-y-4">
               
-              <div className="relative w-full md:w-80">
-                <Search className="w-4 h-4 text-[#332d24]/40 absolute right-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={orderSearchQuery}
-                  onChange={(e) => setOrderSearchQuery(e.target.value)}
-                  placeholder="ابحث باسم الطالب أو رقم الهاتف أو كود الطلب..."
-                  className="w-full pr-10 pl-3 py-2 text-xs sm:text-sm rounded-xl bg-[#fffaf6] border border-[#eb842d]/25 text-[#332d24] focus:outline-none focus:ring-2 focus:ring-[#eb842d]"
-                />
-              </div>
-
-              {/* Filters */}
-              <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                <div className="relative">
-                  <select
-                    value={orderStageFilter}
-                    onChange={(e) => setOrderStageFilter(e.target.value)}
-                    className="appearance-none pr-8 pl-3 py-2 rounded-xl bg-[#fffaf6] border border-[#eb842d]/30 text-xs font-bold text-[#332d24] focus:outline-none focus:ring-2 focus:ring-[#eb842d] cursor-pointer"
-                  >
-                    <option value="all">كافة المراحل</option>
-                    <option value="senior">سينيور</option>
-                    <option value="wheeler">ويلر</option>
-                    <option value="junior">جونيور</option>
-                  </select>
-                  <ChevronDown className="w-3.5 h-3.5 text-[#eb842d] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              {/* Row 1: Search + Stage Filter */}
+              <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+                <div className="relative w-full md:w-80">
+                  <Search className="w-4 h-4 text-[#332d24]/40 absolute right-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={orderSearchQuery}
+                    onChange={(e) => setOrderSearchQuery(e.target.value)}
+                    placeholder="ابحث باسم الطالب أو الهاتف أو الفصل أو الكود..."
+                    className="w-full pr-10 pl-3 py-2 text-xs sm:text-sm rounded-xl bg-[#fffaf6] border border-[#eb842d]/25 text-[#332d24] focus:outline-none focus:ring-2 focus:ring-[#eb842d]"
+                  />
                 </div>
 
-                <div className="relative">
-                  <select
-                    value={orderStatusFilter}
-                    onChange={(e) => setOrderStatusFilter(e.target.value)}
-                    className="appearance-none pr-8 pl-3 py-2 rounded-xl bg-[#fffaf6] border border-[#eb842d]/30 text-xs font-bold text-[#332d24] focus:outline-none focus:ring-2 focus:ring-[#eb842d] cursor-pointer"
+                <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                  <div className="relative w-full sm:w-auto">
+                    <select
+                      value={orderStageFilter}
+                      onChange={(e) => setOrderStageFilter(e.target.value)}
+                      className="w-full sm:w-auto appearance-none pr-8 pl-4 py-2 rounded-xl bg-[#fffaf6] border border-[#eb842d]/30 text-xs font-bold text-[#332d24] focus:outline-none focus:ring-2 focus:ring-[#eb842d] cursor-pointer"
+                    >
+                      <option value="all">كافة المراحل</option>
+                      <option value="senior">سينيور (الصف الثالث)</option>
+                      <option value="wheeler">ويلر (الصف الثاني)</option>
+                      <option value="junior">جونيور (الصف الأول)</option>
+                    </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-[#eb842d] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Row 2: Payment Filter Tabs & Batch Selection */}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-3 border-t border-[#eb842d]/15">
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 no-scrollbar">
+                  <span className="text-xs font-bold text-[#332d24]/60 ml-1 shrink-0">حالة الدفع:</span>
+                  <button
+                    type="button"
+                    onClick={() => setOrderPaymentFilter('all')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1 ${
+                      orderPaymentFilter === 'all'
+                        ? 'bg-[#332d24] text-white shadow-xs'
+                        : 'bg-[#fce8dd]/60 text-[#332d24] hover:bg-[#fce8dd]'
+                    }`}
                   >
-                    <option value="all">كافة الحالات</option>
-                    <option value="pending">⏳ قيد الانتظار</option>
-                    <option value="printing">🖨️ قيد الطباعة</option>
-                    <option value="ready">📦 جاهز للاستلام</option>
-                    <option value="delivered">✅ تم التسليم</option>
-                    <option value="cancelled">❌ ملغي</option>
-                  </select>
-                  <ChevronDown className="w-3.5 h-3.5 text-[#eb842d] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <span>الكل</span>
+                    <span className="text-[10px] opacity-75">({orders.length})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setOrderPaymentFilter('paid')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1 ${
+                      orderPaymentFilter === 'paid'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
+                    }`}
+                  >
+                    <CheckCircle className="w-3 h-3 text-emerald-500" />
+                    <span>تم الدفع</span>
+                    <span className="text-[10px] font-black">({paidOrders.length})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setOrderPaymentFilter('unpaid')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1 ${
+                      orderPaymentFilter === 'unpaid'
+                        ? 'bg-amber-600 text-white shadow-xs'
+                        : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200'
+                    }`}
+                  >
+                    <Clock className="w-3 h-3 text-amber-500" />
+                    <span>لم يدفع بعد</span>
+                    <span className="text-[10px] font-black">({unpaidOrders.length})</span>
+                  </button>
+                </div>
+
+                {/* Batch Selection Action Buttons */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSelectAllPaid}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-black transition-all cursor-pointer whitespace-nowrap"
+                    title="تحديد كل الطلاب الذين تم الدفع لهم لأمر الطباعة"
+                  >
+                    <CheckSquare className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>تحديد كل من دفع ({paidOrders.length})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSelectAllFiltered(filteredOrders)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#fce8dd]/70 hover:bg-[#fce8dd] text-[#332d24] border border-[#eb842d]/30 text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
+                  >
+                    <span>تحديد الظاهرين ({filteredOrders.length})</span>
+                  </button>
+
+                  {selectedOrderIds.size > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleDeselectAll}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
+                    >
+                      <X className="w-3 h-3" />
+                      <span>إلغاء التحديد ({selectedOrderIds.size})</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -851,6 +1157,7 @@ export default function AdminPage() {
               <div className="space-y-4">
                 {filteredOrders.map((order) => {
                   const stageInfo = STAGES_LIST.find((s) => s.id === order.stage);
+                  const isSelected = selectedOrderIds.has(order.id);
                   
                   // WhatsApp direct chat url
                   const cleanPhone = order.phone.replace(/[^0-9]/g, '');
@@ -860,11 +1167,36 @@ export default function AdminPage() {
                   return (
                     <div
                       key={order.id}
-                      className="bg-white rounded-2xl p-5 sm:p-6 border border-[#eb842d]/25 shadow-sm hover:shadow-md transition-all space-y-4"
+                      className={`bg-white rounded-2xl p-5 sm:p-6 border transition-all space-y-4 ${
+                        isSelected
+                          ? 'border-[#eb842d] shadow-md ring-2 ring-[#eb842d]/20'
+                          : 'border-[#eb842d]/25 shadow-sm hover:shadow-md'
+                      }`}
                     >
-                      {/* Top Bar: Code, Date, Stage, Status */}
+                      {/* Top Bar: Selection Checkbox, Code, Date, Stage, Payment Status Button */}
                       <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 pb-3 border-b border-[#eb842d]/15">
                         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                          {/* Selection Checkbox */}
+                          <button
+                            type="button"
+                            onClick={() => handleToggleOrderSelection(order.id)}
+                            className={`p-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                              isSelected
+                                ? 'bg-[#eb842d] text-white shadow-xs'
+                                : 'bg-[#fce8dd]/60 hover:bg-[#fce8dd] text-[#332d24]/60'
+                            }`}
+                            title={isSelected ? 'استبعاد الطالب من أمر الطباعة' : 'تحديد الطالب لأمر الطباعة'}
+                          >
+                            {isSelected ? (
+                              <CheckSquare className="w-4 h-4 stroke-[2.5]" />
+                            ) : (
+                              <Square className="w-4 h-4" />
+                            )}
+                            <span className="text-[11px] font-bold hidden sm:inline">
+                              {isSelected ? 'محدد للطباعة' : 'تحديد'}
+                            </span>
+                          </button>
+
                           <span className="px-3 py-1 rounded-xl bg-[#eb842d]/15 text-[#eb842d] font-black text-xs sm:text-sm tracking-wider whitespace-nowrap">
                             {order.orderCode}
                           </span>
@@ -881,32 +1213,78 @@ export default function AdminPage() {
                             {stageInfo?.nameAr || order.stage}
                           </span>
 
-                          {/* Status Dropdown */}
-                          <div className="relative">
-                            <select
-                              value={order.status}
-                              onChange={(e) =>
-                                handleStatusChange(order.id, e.target.value as OrderStatus)
-                              }
-                              className={`appearance-none pr-7 pl-3 py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
-                                order.status === 'delivered'
-                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                                  : order.status === 'printing'
-                                  ? 'bg-amber-50 text-amber-700 border-amber-300'
-                                  : order.status === 'ready'
-                                  ? 'bg-blue-50 text-blue-700 border-blue-300'
-                                  : order.status === 'cancelled'
-                                  ? 'bg-red-50 text-red-700 border-red-300'
-                                  : 'bg-[#fffaf6] text-[#eb842d] border-[#eb842d]/40'
-                              }`}
-                            >
-                              <option value="pending">⏳ قيد الانتظار</option>
-                              <option value="printing">🖨️ قيد الطباعة</option>
-                              <option value="ready">📦 جاهز للاستلام</option>
-                              <option value="delivered">✅ تم التسليم</option>
-                              <option value="cancelled">❌ ملغي</option>
-                            </select>
-                            <ChevronDown className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-60" />
+                          {/* Direct Payment Toggle Button & Amount */}
+                          <div className="flex items-center gap-1.5">
+                            {order.isPaid ? (
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleTogglePayment(order)}
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black shadow-xs transition-all cursor-pointer whitespace-nowrap"
+                                  title="اضغط للتغيير إلى لم يدفع بعد"
+                                >
+                                  <CheckCircle className="w-3.5 h-3.5 fill-white text-emerald-500" />
+                                  <span>تم الدفع ✓</span>
+                                </button>
+
+                                {editingPaidAmountOrderId === order.id ? (
+                                  <form
+                                    onSubmit={(e) => {
+                                      e.preventDefault();
+                                      const val = parseFloat(tempPaidAmount);
+                                      if (!isNaN(val) && val >= 0) {
+                                        handleSaveCustomPaidAmount(order.id, val);
+                                      }
+                                    }}
+                                    className="flex items-center gap-1"
+                                  >
+                                    <input
+                                      type="number"
+                                      value={tempPaidAmount}
+                                      onChange={(e) => setTempPaidAmount(e.target.value)}
+                                      className="w-16 px-1.5 py-1 text-xs font-bold rounded-lg border border-emerald-400 bg-white text-emerald-800 text-center focus:outline-none"
+                                      autoFocus
+                                    />
+                                    <button
+                                      type="submit"
+                                      className="px-1.5 py-1 bg-emerald-600 text-white rounded-lg text-[10px] font-bold cursor-pointer"
+                                    >
+                                      حفظ
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditingPaidAmountOrderId(null)}
+                                      className="px-1.5 py-1 bg-gray-200 text-gray-700 rounded-lg text-[10px] font-bold cursor-pointer"
+                                    >
+                                      إلغاء
+                                    </button>
+                                  </form>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingPaidAmountOrderId(order.id);
+                                      setTempPaidAmount(String(order.paidAmount ?? order.totalPrice));
+                                    }}
+                                    className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                                    title="اضغط لتعديل المبلغ المدفوع"
+                                  >
+                                    <span>{order.paidAmount ?? order.totalPrice} ج</span>
+                                    <Edit2 className="w-2.5 h-2.5 text-emerald-600" />
+                                  </button>
+                                )}
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleTogglePayment(order)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-emerald-50 text-amber-800 hover:text-emerald-700 border border-amber-300 hover:border-emerald-300 text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-2xs"
+                                title="اضغط لتأكيد استلام المبلغ فوراً"
+                              >
+                                <Clock className="w-3.5 h-3.5 text-amber-500" />
+                                <span>لم يدفع بعد (اضغط لتأكيد الدفع)</span>
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1033,6 +1411,49 @@ export default function AdminPage() {
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {/* Sticky Floating Selection Bar */}
+            {selectedOrderIds.size > 0 && (
+              <div className="fixed bottom-4 left-4 right-4 max-w-4xl mx-auto z-40 bg-[#332d24] text-white p-3.5 sm:p-4 rounded-2xl shadow-2xl border border-[#eb842d]/40 flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-3">
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <span className="w-9 h-9 rounded-xl bg-[#eb842d] flex items-center justify-center font-black text-sm shrink-0 shadow-sm">
+                    {selectedOrderIds.size}
+                  </span>
+                  <div>
+                    <div className="text-xs sm:text-sm font-black">
+                      تم تحديد {selectedOrderIds.size} {selectedOrderIds.size === 1 ? 'طالب' : 'طلاب'} لأمر الطباعة
+                    </div>
+                    <div className="text-[11px] text-white/75 flex items-center gap-2 mt-0.5">
+                      <span>إجمالي القيمة: <strong className="text-[#eb842d] font-black">{selectedTotalAmount} ج.م</strong></span>
+                      <span>•</span>
+                      <span>الكتب: <strong>{selectedTotalCopies} نسخة</strong></span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setManifestSource('selected');
+                      setActiveTab('manifest');
+                    }}
+                    className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-[#eb842d] hover:bg-[#d26f1c] text-white text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md whitespace-nowrap"
+                  >
+                    <Printer className="w-4 h-4" />
+                    <span>عرض تقرير طباعة المحددين 🖨️</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleDeselectAll}
+                    className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white/80 hover:text-white text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
+                  >
+                    إلغاء التحديد
+                  </button>
+                </div>
               </div>
             )}
 

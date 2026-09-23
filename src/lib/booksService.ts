@@ -279,31 +279,47 @@ export async function getOrders(): Promise<Order[]> {
         .order('created_at', { ascending: false });
 
       if (!error && ordersData) {
-        const mappedOrders: Order[] = ordersData.map((o: any) => ({
-          id: o.id,
-          orderCode: o.order_code,
-          studentName: o.student_name,
-          phone: o.phone || '',
-          studentClass: o.student_class || o.parent_phone || '',
-          stage: o.stage as StageId,
-          notes: o.notes,
-          totalBooks: o.total_books,
-          booksPrice: Number(o.books_price),
-          deliveryFee: Number(o.delivery_fee),
-          totalPrice: Number(o.total_price),
-          status: o.status as OrderStatus,
-          createdAt: o.created_at,
-          items: (o.order_items || []).map((it: any) => ({
-            id: it.id,
-            orderId: it.order_id,
-            bookId: it.book_id,
-            bookTitle: it.book_title,
-            subject: it.subject,
-            stage: it.stage as StageId,
-            term: it.term,
-            price: Number(it.price),
-          })),
-        }));
+        const mappedOrders: Order[] = ordersData.map((o: any) => {
+          const isPaid = o.status === 'printing' || o.status === 'ready' || o.status === 'delivered';
+          let customPaidAmount: number | undefined;
+          if (o.notes) {
+            const match = o.notes.match(/(?:paid:|مدفوع:\s*)(\d+(?:\.\d+)?)/i);
+            if (match) {
+              customPaidAmount = Number(match[1]);
+            }
+          }
+          const paidAmount = isPaid
+            ? (customPaidAmount !== undefined ? customPaidAmount : Number(o.total_price))
+            : 0;
+
+          return {
+            id: o.id,
+            orderCode: o.order_code,
+            studentName: o.student_name,
+            phone: o.phone || '',
+            studentClass: o.student_class || o.parent_phone || '',
+            stage: o.stage as StageId,
+            notes: o.notes,
+            totalBooks: o.total_books,
+            booksPrice: Number(o.books_price),
+            deliveryFee: Number(o.delivery_fee),
+            totalPrice: Number(o.total_price),
+            status: o.status as OrderStatus,
+            isPaid,
+            paidAmount,
+            createdAt: o.created_at,
+            items: (o.order_items || []).map((it: any) => ({
+              id: it.id,
+              orderId: it.order_id,
+              bookId: it.book_id,
+              bookTitle: it.book_title,
+              subject: it.subject,
+              stage: it.stage as StageId,
+              term: it.term,
+              price: Number(it.price),
+            })),
+          };
+        });
 
         // مزامنة الكاش المحلي مع قاعدة البيانات
         if (typeof window !== 'undefined') {
@@ -359,6 +375,66 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus): P
   }
 
   return true;
+}
+
+// دالة تبديل حالة الدفع والمبلغ المدفوع (للأدمن)
+export async function toggleOrderPayment(
+  orderId: string,
+  isPaid: boolean,
+  customPaidAmount?: number
+): Promise<{ success: boolean; isPaid: boolean; paidAmount: number }> {
+  const newStatus: OrderStatus = isPaid ? 'printing' : 'pending';
+
+  try {
+    if (supabase) {
+      if (customPaidAmount !== undefined) {
+        const { data: current } = await supabase
+          .from('orders')
+          .select('notes, total_price')
+          .eq('id', orderId)
+          .single();
+
+        let baseNotes = (current?.notes || '').replace(/\[مدفوع:[^\]]*\]/g, '').trim();
+        const finalNotes = isPaid
+          ? (baseNotes ? `${baseNotes} [مدفوع: ${customPaidAmount} ج]` : `[مدفوع: ${customPaidAmount} ج]`)
+          : baseNotes;
+
+        await supabase
+          .from('orders')
+          .update({
+            status: newStatus,
+            notes: finalNotes,
+          })
+          .eq('id', orderId);
+      } else {
+        await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
+      }
+    }
+  } catch (err) {
+    console.warn('Supabase toggleOrderPayment error:', err);
+  }
+
+  if (typeof window !== 'undefined') {
+    const raw = localStorage.getItem(LOCAL_STORAGE_ORDERS_KEY);
+    if (raw) {
+      const list: Order[] = JSON.parse(raw);
+      const idx = list.findIndex((o) => o.id === orderId);
+      if (idx >= 0) {
+        list[idx].status = newStatus;
+        list[idx].isPaid = isPaid;
+        list[idx].paidAmount = isPaid
+          ? (customPaidAmount !== undefined ? customPaidAmount : list[idx].totalPrice)
+          : 0;
+        localStorage.setItem(LOCAL_STORAGE_ORDERS_KEY, JSON.stringify(list));
+      }
+    }
+  }
+
+  return {
+    success: true,
+    isPaid,
+    paidAmount: isPaid ? (customPaidAmount !== undefined ? customPaidAmount : 0) : 0,
+  };
 }
 
 // دالة حذف طلب بالكامل (الأدمن)
@@ -485,7 +561,10 @@ export function generatePrintingManifest(orders: Order[]): PrintingManifestItem[
 }
 
 // دالة صياغة رسالة الواتساب الجاهزة لصاحب المطبعة
-export function formatPrintingPressWhatsAppMessage(manifest: PrintingManifestItem[]): string {
+export function formatPrintingPressWhatsAppMessage(
+  manifest: PrintingManifestItem[],
+  studentNames?: string[]
+): string {
   if (manifest.length === 0) return 'لا توجد طلبات طباعة حالياً.';
 
   const totalCopies = manifest.reduce((acc, m) => acc + m.quantity, 0);
@@ -521,6 +600,12 @@ export function formatPrintingPressWhatsAppMessage(manifest: PrintingManifestIte
       message += `  ${idx + 1}. ${it.bookTitle} [${termNames[it.term] || it.term}] 👈 *${it.quantity} نسخة*\n`;
     });
     message += `\n`;
+  }
+
+  if (studentNames && studentNames.length > 0) {
+    message += `👥 *الطلاب المشمولين في هذا الإرسال (${studentNames.length} طالب):*\n`;
+    message += studentNames.map((name, i) => `  ${i + 1}. ${name}`).join('\n');
+    message += `\n\n`;
   }
 
   message += `----------------------------------------\n`;

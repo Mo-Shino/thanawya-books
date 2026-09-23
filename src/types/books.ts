@@ -54,6 +54,8 @@ export interface Order {
   deliveryFee: number;
   totalPrice: number;
   status: OrderStatus;
+  isPaid?: boolean;
+  paidAmount?: number;
   items: OrderItem[];
   createdAt: string;
 }
