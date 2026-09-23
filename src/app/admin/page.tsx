@@ -27,6 +27,7 @@ import {
 } from '@/lib/booksService';
 import { BooksHeader } from '@/components/BooksHeader';
 import { PdfPreviewModal } from '@/components/PdfPreviewModal';
+import { CustomDropdown } from '@/components/CustomDropdown';
 import {
   Printer,
   Package,
@@ -1048,20 +1049,18 @@ export default function AdminPage() {
                   />
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-                  <div className="relative w-full sm:w-auto">
-                    <select
-                      value={orderStageFilter}
-                      onChange={(e) => setOrderStageFilter(e.target.value)}
-                      className="w-full sm:w-auto appearance-none pr-8 pl-4 py-2 rounded-xl bg-[#fffaf6] border border-[#eb842d]/30 text-xs font-bold text-[#332d24] focus:outline-none focus:ring-2 focus:ring-[#eb842d] cursor-pointer"
-                    >
-                      <option value="all">كافة المراحل</option>
-                      <option value="senior">سينيور (الصف الثالث)</option>
-                      <option value="wheeler">ويلر (الصف الثاني)</option>
-                      <option value="junior">جونيور (الصف الأول)</option>
-                    </select>
-                    <ChevronDown className="w-3.5 h-3.5 text-[#eb842d] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  </div>
+                <div className="w-full sm:w-56">
+                  <CustomDropdown
+                    value={orderStageFilter}
+                    onChange={(val) => setOrderStageFilter(val)}
+                    options={[
+                      { value: 'all', label: 'كافة المراحل' },
+                      { value: 'senior', label: 'سينيور (الصف الثالث)' },
+                      { value: 'wheeler', label: 'ويلر (الصف الثاني)' },
+                      { value: 'junior', label: 'جونيور (الصف الأول)' },
+                    ]}
+                    placeholder="اختر المرحلة..."
+                  />
                 </div>
               </div>
 
@@ -1167,133 +1166,137 @@ export default function AdminPage() {
                   return (
                     <div
                       key={order.id}
-                      className={`bg-white rounded-2xl p-5 sm:p-6 border transition-all space-y-4 ${
+                      className={`bg-white rounded-2xl p-3.5 sm:p-6 border transition-all space-y-3 sm:space-y-4 overflow-hidden ${
                         isSelected
                           ? 'border-[#eb842d] shadow-md ring-2 ring-[#eb842d]/20'
                           : 'border-[#eb842d]/25 shadow-sm hover:shadow-md'
                       }`}
                     >
                       {/* Top Bar: Selection Checkbox, Code, Date, Stage, Payment Status Button */}
-                      <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 pb-3 border-b border-[#eb842d]/15">
-                        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                          {/* Selection Checkbox */}
-                          <button
-                            type="button"
-                            onClick={() => handleToggleOrderSelection(order.id)}
-                            className={`p-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
-                              isSelected
-                                ? 'bg-[#eb842d] text-white shadow-xs'
-                                : 'bg-[#fce8dd]/60 hover:bg-[#fce8dd] text-[#332d24]/60'
-                            }`}
-                            title={isSelected ? 'استبعاد الطالب من أمر الطباعة' : 'تحديد الطالب لأمر الطباعة'}
-                          >
-                            {isSelected ? (
-                              <CheckSquare className="w-4 h-4 stroke-[2.5]" />
-                            ) : (
-                              <Square className="w-4 h-4" />
-                            )}
-                            <span className="text-[11px] font-bold hidden sm:inline">
-                              {isSelected ? 'محدد للطباعة' : 'تحديد'}
-                            </span>
-                          </button>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-2.5 pb-2.5 sm:pb-3 border-b border-[#eb842d]/15">
+                        {/* Mobile Row 1 / Desktop Right Side: Checkbox, Code, Stage, Date */}
+                        <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-3">
+                          <div className="flex items-center gap-1.5 sm:gap-2">
+                            {/* Selection Checkbox */}
+                            <button
+                              type="button"
+                              onClick={() => handleToggleOrderSelection(order.id)}
+                              className={`p-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                                isSelected
+                                  ? 'bg-[#eb842d] text-white shadow-xs'
+                                  : 'bg-[#fce8dd]/60 hover:bg-[#fce8dd] text-[#332d24]/60'
+                              }`}
+                              title={isSelected ? 'استبعاد الطالب من أمر الطباعة' : 'تحديد الطالب لأمر الطباعة'}
+                            >
+                              {isSelected ? (
+                                <CheckSquare className="w-4 h-4 stroke-[2.5]" />
+                              ) : (
+                                <Square className="w-4 h-4" />
+                              )}
+                              <span className="text-[11px] font-bold hidden md:inline">
+                                {isSelected ? 'محدد للطباعة' : 'تحديد'}
+                              </span>
+                            </button>
 
-                          <span className="px-3 py-1 rounded-xl bg-[#eb842d]/15 text-[#eb842d] font-black text-xs sm:text-sm tracking-wider whitespace-nowrap">
-                            {order.orderCode}
-                          </span>
-                          <span className="text-[11px] sm:text-xs font-semibold text-[#332d24]/60 whitespace-nowrap">
+                            <span className="px-2.5 sm:px-3 py-1 rounded-xl bg-[#eb842d]/15 text-[#eb842d] font-black text-xs sm:text-sm tracking-wider whitespace-nowrap">
+                              {order.orderCode}
+                            </span>
+
+                            <span className="px-2 sm:px-2.5 py-0.5 rounded-lg bg-[#fce8dd] text-[#332d24] font-bold text-[11px] sm:text-xs whitespace-nowrap">
+                              {stageInfo?.nameAr || order.stage}
+                            </span>
+                          </div>
+
+                          <span className="text-[10px] sm:text-xs font-semibold text-[#332d24]/60 whitespace-nowrap">
                             {new Date(order.createdAt).toLocaleString('ar-EG', {
-                              dateStyle: 'medium',
+                              dateStyle: 'short',
                               timeStyle: 'short',
                             })}
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="px-2.5 py-1 rounded-lg bg-[#fce8dd] text-[#332d24] font-bold text-xs whitespace-nowrap">
-                            {stageInfo?.nameAr || order.stage}
-                          </span>
-
-                          {/* Direct Payment Toggle Button & Amount */}
-                          <div className="flex items-center gap-1.5">
-                            {order.isPaid ? (
-                              <div className="flex items-center gap-1.5">
-                                <button
-                                  type="button"
-                                  onClick={() => handleTogglePayment(order)}
-                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black shadow-xs transition-all cursor-pointer whitespace-nowrap"
-                                  title="اضغط للتغيير إلى لم يدفع بعد"
-                                >
-                                  <CheckCircle className="w-3.5 h-3.5 fill-white text-emerald-500" />
-                                  <span>تم الدفع ✓</span>
-                                </button>
-
-                                {editingPaidAmountOrderId === order.id ? (
-                                  <form
-                                    onSubmit={(e) => {
-                                      e.preventDefault();
-                                      const val = parseFloat(tempPaidAmount);
-                                      if (!isNaN(val) && val >= 0) {
-                                        handleSaveCustomPaidAmount(order.id, val);
-                                      }
-                                    }}
-                                    className="flex items-center gap-1"
-                                  >
-                                    <input
-                                      type="number"
-                                      value={tempPaidAmount}
-                                      onChange={(e) => setTempPaidAmount(e.target.value)}
-                                      className="w-16 px-1.5 py-1 text-xs font-bold rounded-lg border border-emerald-400 bg-white text-emerald-800 text-center focus:outline-none"
-                                      autoFocus
-                                    />
-                                    <button
-                                      type="submit"
-                                      className="px-1.5 py-1 bg-emerald-600 text-white rounded-lg text-[10px] font-bold cursor-pointer"
-                                    >
-                                      حفظ
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => setEditingPaidAmountOrderId(null)}
-                                      className="px-1.5 py-1 bg-gray-200 text-gray-700 rounded-lg text-[10px] font-bold cursor-pointer"
-                                    >
-                                      إلغاء
-                                    </button>
-                                  </form>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setEditingPaidAmountOrderId(order.id);
-                                      setTempPaidAmount(String(order.paidAmount ?? order.totalPrice));
-                                    }}
-                                    className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
-                                    title="اضغط لتعديل المبلغ المدفوع"
-                                  >
-                                    <span>{order.paidAmount ?? order.totalPrice} ج</span>
-                                    <Edit2 className="w-2.5 h-2.5 text-emerald-600" />
-                                  </button>
-                                )}
-                              </div>
-                            ) : (
+                        {/* Mobile Row 2 / Desktop Left Side: Payment Status & Amount */}
+                        <div className="flex items-center justify-between sm:justify-end gap-1.5 pt-1.5 sm:pt-0 border-t border-[#eb842d]/10 sm:border-t-0">
+                          {order.isPaid ? (
+                            <div className="flex items-center justify-between sm:justify-end gap-1.5 w-full sm:w-auto">
                               <button
                                 type="button"
                                 onClick={() => handleTogglePayment(order)}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-emerald-50 text-amber-800 hover:text-emerald-700 border border-amber-300 hover:border-emerald-300 text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-2xs"
-                                title="اضغط لتأكيد استلام المبلغ فوراً"
+                                className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black shadow-xs transition-all cursor-pointer whitespace-nowrap"
+                                title="اضغط للتغيير إلى لم يدفع بعد"
                               >
-                                <Clock className="w-3.5 h-3.5 text-amber-500" />
-                                <span>لم يدفع بعد (اضغط لتأكيد الدفع)</span>
+                                <CheckCircle className="w-3.5 h-3.5 fill-white text-emerald-500 shrink-0" />
+                                <span>تم الدفع ✓</span>
                               </button>
-                            )}
-                          </div>
+
+                              {editingPaidAmountOrderId === order.id ? (
+                                <form
+                                  onSubmit={(e) => {
+                                    e.preventDefault();
+                                    const val = parseFloat(tempPaidAmount);
+                                    if (!isNaN(val) && val >= 0) {
+                                      handleSaveCustomPaidAmount(order.id, val);
+                                    }
+                                  }}
+                                  className="flex items-center gap-1"
+                                >
+                                  <input
+                                    type="number"
+                                    value={tempPaidAmount}
+                                    onChange={(e) => setTempPaidAmount(e.target.value)}
+                                    className="w-16 px-1.5 py-1 text-xs font-bold rounded-lg border border-emerald-400 bg-white text-emerald-800 text-center focus:outline-none"
+                                    autoFocus
+                                  />
+                                  <button
+                                    type="submit"
+                                    className="px-2 py-1 bg-emerald-600 text-white rounded-lg text-[10px] font-bold cursor-pointer"
+                                  >
+                                    حفظ
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingPaidAmountOrderId(null)}
+                                    className="px-2 py-1 bg-gray-200 text-gray-700 rounded-lg text-[10px] font-bold cursor-pointer"
+                                  >
+                                    إلغاء
+                                  </button>
+                                </form>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingPaidAmountOrderId(order.id);
+                                    setTempPaidAmount(String(order.paidAmount ?? order.totalPrice));
+                                  }}
+                                  className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                                  title="اضغط لتعديل المبلغ المدفوع"
+                                >
+                                  <span>{order.paidAmount ?? order.totalPrice} ج</span>
+                                  <Edit2 className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
+                                </button>
+                              )}
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleTogglePayment(order)}
+                              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-emerald-50 text-amber-800 hover:text-emerald-700 border border-amber-300 hover:border-emerald-300 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+                              title="اضغط لتأكيد استلام المبلغ فوراً"
+                            >
+                              <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                              <span>لم يدفع بعد</span>
+                              <span className="text-[10px] text-amber-700/80 font-normal sm:hidden">(اضغط للتأكيد)</span>
+                              <span className="text-[10px] text-amber-700/80 font-normal hidden sm:inline">(اضغط لتأكيد الدفع)</span>
+                            </button>
+                          )}
                         </div>
                       </div>
 
                       {/* Student Details and Contact */}
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-base font-black text-[#332d24]">
+                            <span className="text-sm sm:text-base font-black text-[#332d24]">
                               {order.studentName}
                             </span>
                             {order.studentClass && (
@@ -1316,35 +1319,35 @@ export default function AdminPage() {
                         </div>
 
                         {/* Action Buttons: WhatsApp + Edit + Delete */}
-                        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
+                        <div className="flex items-center gap-2 w-full md:w-auto">
                           <a
                             href={studentWhatsAppUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#1ebd5b] text-white text-xs font-bold transition-all shadow-xs whitespace-nowrap"
+                            className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#1ebd5b] text-white text-xs font-bold transition-all shadow-xs whitespace-nowrap"
                             title="محادثة واتساب"
                           >
-                            <MessageCircle className="w-3.5 h-3.5 fill-white" />
+                            <MessageCircle className="w-3.5 h-3.5 fill-white shrink-0" />
                             <span>واتساب</span>
                           </a>
 
                           <button
                             type="button"
                             onClick={() => handleOpenEditOrder(order)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#fce8dd] hover:bg-[#eb842d] text-[#332d24] hover:text-white border border-[#eb842d]/30 text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
+                            className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#fce8dd] hover:bg-[#eb842d] text-[#332d24] hover:text-white border border-[#eb842d]/30 text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
                             title="تعديل بيانات أو كتب الطلب"
                           >
-                            <Edit2 className="w-3.5 h-3.5" />
+                            <Edit2 className="w-3.5 h-3.5 shrink-0" />
                             <span>تعديل</span>
                           </button>
 
                           <button
                             type="button"
                             onClick={() => handleDeleteOrder(order.id)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
+                            className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
                             title="حذف الطلب نهائياً"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-3.5 h-3.5 shrink-0" />
                             <span>حذف</span>
                           </button>
                         </div>
@@ -1707,35 +1710,35 @@ export default function AdminPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-[#332d24] mb-1">
+                  <label className="block text-xs font-bold text-[#332d24] mb-1.5">
                     المرحلة الدراسية <span className="text-red-500">*</span>
                   </label>
-                  <select
+                  <CustomDropdown
                     value={bookForm.stage}
-                    onChange={(e) => setBookForm({ ...bookForm, stage: e.target.value as StageId })}
-                    className="w-full px-3 py-2 text-sm rounded-xl bg-[#fffaf6] border border-[#eb842d]/30 text-[#332d24] focus:outline-none"
-                  >
-                    <option value="junior">جونيور (1 ثانوي)</option>
-                    <option value="wheeler">ويلر (2 ثانوي)</option>
-                    <option value="senior">سينيور (3 ثانوي)</option>
-                  </select>
+                    onChange={(val) => setBookForm({ ...bookForm, stage: val as StageId })}
+                    options={[
+                      { value: 'junior', label: 'جونيور (1 ثانوي)' },
+                      { value: 'wheeler', label: 'ويلر (2 ثانوي)' },
+                      { value: 'senior', label: 'سينيور (3 ثانوي)' },
+                    ]}
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#332d24] mb-1">
+                  <label className="block text-xs font-bold text-[#332d24] mb-1.5">
                     الفصل الدراسي <span className="text-red-500">*</span>
                   </label>
-                  <select
+                  <CustomDropdown
                     value={bookForm.term}
-                    onChange={(e) =>
-                      setBookForm({ ...bookForm, term: e.target.value as SemesterTerm })
+                    onChange={(val) =>
+                      setBookForm({ ...bookForm, term: val as SemesterTerm })
                     }
-                    className="w-full px-3 py-2 text-sm rounded-xl bg-[#fffaf6] border border-[#eb842d]/30 text-[#332d24] focus:outline-none"
-                  >
-                    <option value="term_1">ترم أول</option>
-                    <option value="term_2">ترم ثاني</option>
-                    <option value="full_year">منهج كامل (سنة كاملة)</option>
-                  </select>
+                    options={[
+                      { value: 'term_1', label: 'ترم أول' },
+                      { value: 'term_2', label: 'ترم ثاني' },
+                      { value: 'full_year', label: 'منهج كامل (سنة كاملة)' },
+                    ]}
+                  />
                 </div>
               </div>
 
@@ -1961,32 +1964,29 @@ export default function AdminPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#332d24] mb-1">
+                  <label className="block text-xs font-bold text-[#332d24] mb-1.5">
                     الفصل الدراسي <span className="text-red-500">*</span>
                   </label>
-                  <select
+                  <CustomDropdown
                     value={editOrderForm.studentClass}
-                    onChange={(e) => setEditOrderForm({ ...editOrderForm, studentClass: e.target.value })}
-                    className="w-full px-3 py-2 text-sm rounded-xl bg-[#fffaf6] border border-[#eb842d]/30 text-[#332d24] focus:outline-none"
-                  >
-                    {getClassesForStage(editOrderForm.stage).map((cls) => (
-                      <option key={cls} value={cls}>
-                        فصل {cls}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setEditOrderForm({ ...editOrderForm, studentClass: val })}
+                    options={getClassesForStage(editOrderForm.stage).map((cls) => ({
+                      value: cls,
+                      label: `فصل ${cls}`,
+                    }))}
+                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-[#332d24] mb-1">
+                  <label className="block text-xs font-bold text-[#332d24] mb-1.5">
                     المرحلة الدراسية
                   </label>
-                  <select
+                  <CustomDropdown
                     value={editOrderForm.stage}
-                    onChange={(e) => {
-                      const newStage = e.target.value as StageId;
+                    onChange={(val) => {
+                      const newStage = val as StageId;
                       const available = getClassesForStage(newStage);
                       setEditOrderForm({
                         ...editOrderForm,
@@ -1994,29 +1994,29 @@ export default function AdminPage() {
                         studentClass: available[0] || 'J1',
                       });
                     }}
-                    className="w-full px-3 py-2 text-sm rounded-xl bg-[#fffaf6] border border-[#eb842d]/30 text-[#332d24] focus:outline-none"
-                  >
-                    <option value="junior">جونيور (1 ثانوي)</option>
-                    <option value="wheeler">ويلر (2 ثانوي)</option>
-                    <option value="senior">سينيور (3 ثانوي)</option>
-                  </select>
+                    options={[
+                      { value: 'junior', label: 'جونيور (1 ثانوي)' },
+                      { value: 'wheeler', label: 'ويلر (2 ثانوي)' },
+                      { value: 'senior', label: 'سينيور (3 ثانوي)' },
+                    ]}
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#332d24] mb-1">
-                    حالة الطلب
+                  <label className="block text-xs font-bold text-[#332d24] mb-1.5">
+                    حالة الدفع والطلب
                   </label>
-                  <select
+                  <CustomDropdown
                     value={editOrderForm.status}
-                    onChange={(e) => setEditOrderForm({ ...editOrderForm, status: e.target.value as OrderStatus })}
-                    className="w-full px-3 py-2 text-sm rounded-xl bg-[#fffaf6] border border-[#eb842d]/30 text-[#332d24] focus:outline-none"
-                  >
-                    <option value="pending">⏳ قيد الانتظار</option>
-                    <option value="printing">🖨️ قيد الطباعة</option>
-                    <option value="ready">📦 جاهز للاستلام</option>
-                    <option value="delivered">✅ تم التسليم</option>
-                    <option value="cancelled">❌ ملغي</option>
-                  </select>
+                    onChange={(val) => setEditOrderForm({ ...editOrderForm, status: val as OrderStatus })}
+                    options={[
+                      { value: 'printing', label: 'تم الدفع ✅' },
+                      { value: 'pending', label: 'لم يدفع بعد ⏳' },
+                      { value: 'ready', label: 'جاهز للاستلام 📦' },
+                      { value: 'delivered', label: 'تم التسليم 🚚' },
+                      { value: 'cancelled', label: 'ملغي ❌' },
+                    ]}
+                  />
                 </div>
               </div>
 
